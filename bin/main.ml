@@ -1,93 +1,43 @@
-let c_fold fn s init forward = 
-  let start = if forward then 0 else String.length s - 1 in
-  let in_range = if forward then fun x -> x < String.length s - 1 else fun x -> x > 0 in
-  let next_ind = if forward then fun x -> x + 1 else fun x -> x - 1 in
-  let rec c_fold_helper ind = 
-    if in_range ind then
-      fn (ind |> next_ind |> c_fold_helper) s.[ind]
-    else
-      fn init s.[ind]
-  in c_fold_helper start
+module IntMap = Map.Make(Int)
 
-let c_fold_left fn s init = c_fold fn s init true
-let c_fold_right fn s init = c_fold fn s init false
+let game_maxes game_set = 
+  let rounds = 
+    String.split_on_char ';' game_set 
+    |> List.map (fun round -> String.trim round |> String.split_on_char ',') 
+    |> List.flatten 
+  in
+    List.fold_left (fun map s -> 
+        let (r,g,b) = map in 
+        match String.split_on_char ' ' (String.trim s) with
+        | count_str::color::[] -> 
+          let count = int_of_string count_str in 
+          (match color with 
+          | "red" -> Int.max r count, g, b
+          | "green" -> r, Int.max g count, b
+          | "blue" -> r, g, Int.max b count
+          | _ -> map)
+        | _ -> map) (0, 0, 0) rounds
+        
+let parse_round counts line = 
+  match String.split_on_char ':' line with
+  | g_n::game::[] -> 
+    let game_number = String.sub g_n 5 (String.length g_n - 5) |> int_of_string in
+    let (r,g,b) = game_maxes game in 
+    let (r', g', b') = match IntMap.find_opt game_number counts with | None -> (0,0,0) | Some tup -> tup in
+      IntMap.add game_number (Int.max r r', Int.max g g', Int.max b b') counts
+  | _ -> failwith "Oops"
 
-type match_status = 
-  | Match
-  | Partial of int
+(* let valid_game r g b = r <= 12 && g <= 13 && b <= 14 *)
 
-type match_buffer = string * int * match_status
+let lines = String.split_on_char '\n' "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
 
-let step_buffer (mb : match_buffer) c = 
-  let (s, result, buf) = mb in
-  let new_status = 
-    match buf with 
-    | Match -> Match
-    | Partial index ->
-      if s.[index] <> c then 
-        (if s.[0] <> c then 
-          Partial 0
-        else Partial 1)
-      else
-        if index == String.length s - 1 then
-          Match
-        else
-          Partial (index + 1)
-    in (s, result, new_status)
+let games_map = List.fold_left parse_round IntMap.empty lines
+(* let valid_games = IntMap.filter (fun _ (r,g,b) -> valid_game r g b) games_map *)
 
-let compose_bufs buf1 buf2 = 
-  let (_, r, status) = buf2 in
-    match buf1 with 
-    | Some x -> Some x
-    | None -> 
-      match status with 
-      | Match -> Some r
-      | _ -> None
+let sum = IntMap.fold (fun _ (r,g,b) sum -> (r * g * b) + sum) games_map 0
 
-(***
-  just need multiple 'match buffers', one for each substring. 
-  if any of them match at any time, we're done. 
-***)
-let entries = [
-  ("one",1);("two",2);("three",3);("four",4);
-  ("five",5);("six",6);("seven",7);("eight",8);("nine",9);
-  ("1",1);("2",2);("3",3);("4",4);("5",5);("6",6);("7",7);
-  ("8",8);("9",9)
-]
-
-(* let inputs = String.split_on_char '\n' "two1nine
-eightwothree
-abcone2threexyz
-xtwone3four
-4nineeightseven2
-zoneight234
-7pqrstsixteen" *)
-
-let buffers = List.map (fun tup -> let (s, v) = tup in (s, v, Partial 0)) entries
-
-type maybe_match = Partial of match_buffer list | Match of int
-let get_result res = 
-  match res with 
-  | Match i -> i
-  | _ -> 0
-
-let extract_number s forward = c_fold (fun acc c -> 
-  match acc with 
-  | Match i -> Match i
-  | Partial lst -> 
-    let (result, new_lst) = 
-      List.fold_left_map (fun acc buf -> let new_buf = step_buffer buf c in (compose_bufs acc new_buf, new_buf)) None lst 
-    in 
-      match result with 
-      | None -> Partial new_lst
-      | Some v -> Match v
-) s (Partial buffers) forward |> get_result
-
-let l = c_fold_right (fun acc nxt -> nxt::acc) "one" []
-let l2 = c_fold_left (fun acc nxt -> nxt::acc) "one" []
-
-let () = 
-  List.iter (Printf.printf "%c ") l2;
-  List.iter (Printf.printf "%c ") l;
-  Printf.printf "%d" (extract_number "ontwosone" false);
-  
+let () = Printf.printf "%d\n" sum

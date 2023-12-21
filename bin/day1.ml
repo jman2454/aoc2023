@@ -9,14 +9,7 @@ let c_fold fn s init forward =
       fn init s.[ind]
   in c_fold_helper start
 
-type search_status = 
-  | FoundResult
-  | SearchIndex of int
-
-(* let x = Option.bind *)
-
-type match_buffer = string * int * search_status
-
+type match_buffer = string * int * int option
 let step_buffer (mb : match_buffer) c forward = 
   let (pattern, parsed_value, search_pos) = mb in
   let (start, finish, get_next) = 
@@ -25,18 +18,16 @@ let step_buffer (mb : match_buffer) c forward =
     else (String.length pattern - 1, 0, fun x -> x - 1)
   in
   let new_status = 
-    match search_pos with 
-    | FoundResult -> FoundResult
-    | SearchIndex index ->
+    Option.bind search_pos (fun index ->
       if pattern.[index] <> c then 
         (if pattern.[start] <> c then 
-          SearchIndex start
-        else SearchIndex (get_next start))
+          Some start
+        else Some (get_next start))
       else
         if index == finish then
-          FoundResult
+          None
         else
-          SearchIndex (get_next index)
+          Some (get_next index))
     in (pattern, parsed_value, new_status)
 
 let compose_bufs buf1 buf2 = 
@@ -45,7 +36,7 @@ let compose_bufs buf1 buf2 =
     | Some x -> Some x
     | None -> 
       match status with 
-      | FoundResult -> Some r
+      | None -> Some r
       | _ -> None
 
 (***
@@ -59,7 +50,7 @@ let entries = [
   ("8",8);("9",9)
 ]
 
-let get_buffers forward = List.map (fun tup -> let (s, v) = tup in (s, v, SearchIndex (if forward then 0 else String.length s - 1))) entries
+let get_buffers forward = List.map (fun tup -> let (s, v) = tup in (s, v, Some (if forward then 0 else String.length s - 1))) entries
 
 type maybe_match = Searches of match_buffer list | Parsed of int
 let get_result res = 
