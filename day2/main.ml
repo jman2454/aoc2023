@@ -37,6 +37,7 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"
 
 let games_map = List.fold_left parse_round IntMap.empty lines
 (* let valid_games = IntMap.filter (fun _ (r,g,b) -> valid_game r g b) games_map *)
+(* let sum = IntMap.fold (fun id _ sum -> id + sum) games_map 0 *)
 
 let sum = IntMap.fold (fun _ (r,g,b) sum -> (r * g * b) + sum) games_map 0
 
