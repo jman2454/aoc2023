@@ -157,7 +157,7 @@ let input =
 
 let ascii_0 = int_of_char '0'
 let get_digit c = let diff = (int_of_char c) - ascii_0 in 
-  if diff < 10 && diff > 0 then Some diff else None
+  if diff < 10 && diff >= 0 then Some diff else None
 
 let input_len = String.length input
 let len = (String.index input '\n') + 1
@@ -175,13 +175,11 @@ let walk_pos i x y =
     None
   else 
     Some pos
-    
-let _ = 
-  match walk 290 0 0 with
-  | Some v -> Printf.printf "%c\n" v
-  | None -> Printf.printf "nothing\n"
 
 let is_symbol c = c != '.' && c != '\n' && get_digit c = None
+
+let is_symbol_opt = Option.map is_symbol
+let is_c_opt_symbol c_o = let res = is_symbol_opt c_o in Option.is_some res && Option.get res
 
 let agg prev_state c = 
   match get_digit c with
@@ -189,34 +187,33 @@ let agg prev_state c =
     let has_symbol pos = 
       let wp = walk pos in 
       List.fold_left
-       (fun found next_val -> 
-        found 
-        || 
-        match next_val with
-        | Some n_v -> is_symbol n_v
-        | None -> false) false ([wp 0 1; wp 0 (-1); wp (-1) 0; wp 1 0; wp (-1) (-1); wp 1 1; wp 1 (-1); wp (-1) 1;]) in 
+       (fun found next_val -> found || is_c_opt_symbol next_val) 
+       false 
+       ([wp 0 1; wp 0 (-1); wp (-1) 0; wp 1 0; wp (-1) (-1); wp 1 1; wp 1 (-1); wp (-1) 1;]) in 
     (match prev_state with 
     | NonNumber { count = count; pos = ind } -> 
-        InNumber { pos = ind + 1; n_start = ind; symbol = has_symbol ind; count = count; cur_val = i; } 
+        InNumber { pos = ind + 1; n_start = ind; symbol = has_symbol ind; count = count; cur_val = i; }
     | InNumber { pos = ind; symbol = symbol; count = count; cur_val = cv; n_start = n; } -> 
         InNumber { pos = ind + 1; n_start = n; symbol = symbol || has_symbol ind; count = count; cur_val = cv * 10 + i; })
   | None -> 
     match prev_state with 
     | NonNumber { count = ct; pos = p; } -> NonNumber { count = ct; pos = p + 1; }
     | InNumber { pos = ind; n_start = n; symbol = sym; count = ct; cur_val = cv; } -> 
-      let row_length = ind - n + 2 in
+      Printf.printf "start: %d, now: %d\n" n ind;
+      let left_pad = if (n mod len) = 0 then 0 else 1 in
+      let right_pad = if (ind mod len) = len - 1 then 0 else 1 in
+      let row_length = ind - n + left_pad + right_pad in
       let rec from n = if n = 0 then [] else n-1::(from (n-1)) in
-      let get_row i = walk_pos n (-1) i in
-      let row_starts = List.filter (fun s -> s <> None) [get_row (1); get_row 0; get_row (-1)] |> List.map Option.get in
-      let row_ends = row_starts |> List.map (fun start -> start + row_length - 1) in 
-      let rows = List.map (fun row_end -> (from row_length |> List.map (fun n -> input.[row_end - n]))@['\n']) row_ends in 
+      let get_row i = walk_pos (ind - 1) right_pad i in
+      let row_ends = List.filter (fun s -> s <> None) [get_row (1); get_row 0; get_row (-1)] |> List.map Option.get in
+      let rows = List.map (fun row_end -> (from (row_length) |> List.map (fun n -> input.[row_end - n]))@['\n']) row_ends in 
       let content = List.flatten rows in
       let rec print_char_list list = 
         match list with 
         | [] -> Printf.printf "\n"
         | e::rest -> Printf.printf "%c" e; print_char_list rest;
       in
-      if not sym then print_char_list content else ();
+      if not sym || true then (Printf.printf "n ind: %d, val: %d, sym: %b\n" n cv sym; print_char_list content) else ();
       NonNumber { count = ct + if sym then cv else 0; pos = ind + 1; }
 
 let result = c_fold agg input (NonNumber { count = 0; pos = 0; }) false
