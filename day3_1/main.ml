@@ -9,9 +9,11 @@ let c_fold fn s init backward =
       fn init s.[ind]
   in c_fold_helper start
 
+type sum_pos = int * int
+type one_pass_number = int * bool * int
 type parser_state = 
-| NonNumber of { count : int; pos : int } 
-| InNumber of { pos : int; n_start : int; symbol : bool; count : int; cur_val : int }
+| NonNumber of sum_pos
+| InNumber of sum_pos * one_pass_number
 
 let input = 
 ".......855.442......190..................................969..........520.......59.............................................172..........
@@ -184,17 +186,17 @@ let agg prev_state c =
        false 
        ([wp 0 1; wp 0 (-1); wp (-1) 0; wp 1 0; wp (-1) (-1); wp 1 1; wp 1 (-1); wp (-1) 1;]) in 
     (match prev_state with 
-    | NonNumber { count = count; pos = ind } -> 
-        InNumber { pos = ind + 1; n_start = ind; symbol = has_symbol ind; count = count; cur_val = i; }
-    | InNumber { pos = ind; symbol = symbol; count = count; cur_val = cv; n_start = n; } -> 
-        InNumber { pos = ind + 1; n_start = n; symbol = symbol || has_symbol ind; count = count; cur_val = cv * 10 + i; })
+    | NonNumber (count, pos) -> 
+        InNumber ((count, pos + 1), (pos, has_symbol pos, i))
+    | InNumber ((count, pos), (n, symbol, cv)) -> 
+        InNumber ((count, pos + 1), (n, symbol || has_symbol pos, cv * 10 + i)))
   | None -> 
     match prev_state with 
-    | NonNumber { count = ct; pos = p; } -> NonNumber { count = ct; pos = p + 1; }
-    | InNumber { pos = ind; n_start = _; symbol = sym; count = ct; cur_val = cv; } -> 
-      NonNumber { count = ct + if sym then cv else 0; pos = ind + 1; }
+    | NonNumber (count, pos) -> NonNumber (count, pos+1)
+    | InNumber ((count, pos), (_, sym, cv)) -> 
+      NonNumber ((count + if sym then cv else 0), pos + 1)
 
-let result = c_fold agg input (NonNumber { count = 0; pos = 0; }) false
-let final = match result with | NonNumber x -> x.count | InNumber y -> y.count
+let result = c_fold agg input (NonNumber (0,0)) false
+let final = match result with | NonNumber (c, _) -> c | InNumber ((c,_),_) -> c
 
 let () = Printf.printf "%d\n" final

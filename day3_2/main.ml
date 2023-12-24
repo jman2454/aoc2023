@@ -9,9 +9,13 @@ let c_fold fn s init backward =
       fn init s.[ind]
   in c_fold_helper start
 
+module IntMap = Map.Make(Int)
+module IntSet = Set.Make(Int)
+type sum_pos = int list IntMap.t * int
+type one_pass_number = int * IntSet.t * int
 type parser_state = 
-| NonNumber of { count : int; pos : int } 
-| InNumber of { pos : int; n_start : int; symbol : bool; count : int; cur_val : int }
+| NonNumber of sum_pos
+| InNumber of sum_pos * one_pass_number
 
 let input = 
 ".......855.442......190..................................969..........520.......59.............................................172..........
@@ -162,61 +166,50 @@ let get_digit c = let diff = (int_of_char c) - ascii_0 in
 let input_len = String.length input
 let len = (String.index input '\n') + 1
 
-let walk i x y = 
+let walk_pos i x y = 
   let pos = i + x + len * -y in 
   if pos > input_len || pos < 1 then
     None
   else 
-    Some input.[pos]
-
-let walk_pos i x y = 
-  let pos = i + x + len * -y in 
-  if pos > input_len || pos < 1 || pos == len - 1 then
-    None
-  else 
     Some pos
 
-let is_symbol c = c != '.' && c != '\n' && get_digit c = None
-
-let is_symbol_opt = Option.map is_symbol
-let is_c_opt_symbol c_o = let res = is_symbol_opt c_o in Option.is_some res && Option.get res
+let is_star c = c = '*'
+let is_star_opt = Option.map is_star
+let is_c_opt_star c_o = let res = is_star_opt c_o in Option.is_some res && Option.get res
+let is_ind_opt_star ind = Option.map (String.get input) ind |> is_c_opt_star
 
 let agg prev_state c = 
   match get_digit c with
   | Some i -> 
-    let has_symbol pos = 
-      let wp = walk pos in 
+    let has_symbol pos init = 
+      let wp = walk_pos pos in 
       List.fold_left
-       (fun found next_val -> found || is_c_opt_symbol next_val) 
-       false 
+       (fun found next_val -> if is_ind_opt_star next_val then IntSet.add (Option.get next_val) found else found) 
+       init
        ([wp 0 1; wp 0 (-1); wp (-1) 0; wp 1 0; wp (-1) (-1); wp 1 1; wp 1 (-1); wp (-1) 1;]) in 
     (match prev_state with 
-    | NonNumber { count = count; pos = ind } -> 
-        InNumber { pos = ind + 1; n_start = ind; symbol = has_symbol ind; count = count; cur_val = i; }
-    | InNumber { pos = ind; symbol = symbol; count = count; cur_val = cv; n_start = n; } -> 
-        InNumber { pos = ind + 1; n_start = n; symbol = symbol || has_symbol ind; count = count; cur_val = cv * 10 + i; })
+    | NonNumber (count, pos) -> 
+        InNumber ((count, pos + 1), (pos, has_symbol pos IntSet.empty, i))
+    | InNumber ((count, pos), (n, symbol, cv)) -> 
+        InNumber ((count, pos + 1), (n, has_symbol pos symbol, cv * 10 + i)))
   | None -> 
     match prev_state with 
-    | NonNumber { count = ct; pos = p; } -> NonNumber { count = ct; pos = p + 1; }
-    | InNumber { pos = ind; n_start = n; symbol = sym; count = ct; cur_val = cv; } -> 
-      Printf.printf "start: %d, now: %d\n" n ind;
-      let left_pad = if (n mod len) = 0 then 0 else 1 in
-      let right_pad = if (ind mod len) = len - 1 then 0 else 1 in
-      let row_length = ind - n + left_pad + right_pad in
-      let rec from n = if n = 0 then [] else n-1::(from (n-1)) in
-      let get_row i = walk_pos (ind - 1) right_pad i in
-      let row_ends = List.filter (fun s -> s <> None) [get_row (1); get_row 0; get_row (-1)] |> List.map Option.get in
-      let rows = List.map (fun row_end -> (from (row_length) |> List.map (fun n -> input.[row_end - n]))@['\n']) row_ends in 
-      let content = List.flatten rows in
-      let rec print_char_list list = 
-        match list with 
-        | [] -> Printf.printf "\n"
-        | e::rest -> Printf.printf "%c" e; print_char_list rest;
-      in
-      if not sym || true then (Printf.printf "n ind: %d, val: %d, sym: %b\n" n cv sym; print_char_list content) else ();
-      NonNumber { count = ct + if sym then cv else 0; pos = ind + 1; }
+    | NonNumber (count, pos) -> NonNumber (count, pos+1)
+    | InNumber ((count, pos), (_, sym, cv)) -> 
+      NonNumber (IntSet.fold (fun star_pos map -> 
+        let new_val = match IntMap.find_opt star_pos map with 
+        | Some lst -> cv::lst
+        | None -> [cv] in IntMap.add star_pos new_val map) sym count, pos + 1)
 
-let result = c_fold agg input (NonNumber { count = 0; pos = 0; }) false
-let final = match result with | NonNumber x -> x.count | InNumber y -> y.count
+let result = c_fold agg input (NonNumber (IntMap.empty, 0)) false
+let map = match result with 
+| NonNumber (r, _) -> r
+| InNumber ((r, _), _) -> r
+
+let final = 
+  IntMap.fold (fun _ lst sum -> 
+    match lst with 
+    | a::b::[] -> sum + a * b
+    | _ -> sum) map 0
 
 let () = Printf.printf "%d\n" final
