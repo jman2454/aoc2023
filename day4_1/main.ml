@@ -14,11 +14,9 @@ module IntSet = Set.Make(Int)
 let (>>) f g = fun x -> g (f x)
 
 let parse_int_list = 
-  String.trim 
-  >> String.split_on_char ' ' 
-  >> List.map String.trim 
-  >> List.filter ((=) String.empty >> not)
-  >> List.map int_of_string
+  String.split_on_char ' ' 
+  >> List.filter ((=) ' ' |> String.for_all >> not)
+  >> List.map (String.trim >> int_of_string)
 
 let get_game_score line = 
   let right_side = 
