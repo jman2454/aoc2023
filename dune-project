@@ -7,18 +7,15 @@
 (source
  (github username/reponame))
 
-(authors "Author Name")
+(authors "James Meyers")
+(maintainers "James Meyers")
 
-(maintainers "Maintainer Name")
-
-(license LICENSE)
-
-(documentation https://url/to/documentation)
+(license MIT)
 
 (package
  (name aoc)
- (synopsis "A short synopsis")
- (description "A longer description")
+ (synopsis "AoC 2023 Solutions")
+ (description "My solutions for the 2023 Advent of Code challenge - I decided to solve in OCaml for fun and to refamiliarize myself with the language")
  (depends ocaml dune)
  (tags
   (topics "to describe" your project)))

@@ -2,6 +2,7 @@ module IntSet = Set.Make(Int)
 module IntMap = Map.Make(Int)
 
 let (>>) f g = fun x -> g (f x)
+let flip f = fun a b -> f b a
 
 let parse_int_list = 
   String.split_on_char ' ' 
@@ -22,7 +23,7 @@ let get_game_score (map, prev_mult, score) line =
   let (card_s, values) = parse_twople ':' line in
   let card = parse_card card_s in
   let (winners, drawn) = parse_int_lists values in
-  let winners = List.fold_left (fun map num -> IntSet.add num map) IntSet.empty winners in
+  let winners = List.fold_left (flip IntSet.add) IntSet.empty winners in
   let winner_count = List.fold_left (fun count num -> if IntSet.mem num winners then count + 1 else count) 0 drawn in
   let next_delta = get_default (card + 1) map 0 in
   let end_delta = get_default (card + 1 + winner_count) map 0 in
