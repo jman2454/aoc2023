@@ -1,14 +1,3 @@
-(* let c_fold fn s init backward = 
-  let start = if backward then 0 else String.length s - 1 in
-  let in_range = if backward then fun x -> x < String.length s - 1 else fun x -> x > 0 in
-  let next_ind = if backward then fun x -> x + 1 else fun x -> x - 1 in
-  let rec c_fold_helper ind = 
-    if in_range ind then
-      fn (ind |> next_ind |> c_fold_helper) s.[ind]
-    else
-      fn init s.[ind]
-  in c_fold_helper start *)
-
 module IntSet = Set.Make(Int)
 
 let (>>) f g = fun x -> g (f x)
@@ -18,17 +7,19 @@ let parse_int_list =
   >> List.filter ((=) ' ' |> String.for_all >> not)
   >> List.map (String.trim >> int_of_string)
 
+let list_to_twople lst = 
+  match lst with 
+  | a::b::[] -> (a,b)
+  | _ -> failwith "Invalid twople list!"
+
+let parse_twople c = String.split_on_char c >> list_to_twople
+let parse_int_lists = String.split_on_char '|' >> List.map parse_int_list >> list_to_twople
+let parse_card card = String.sub card 4 (String.length card - 4) |> String.trim |> int_of_string
+
 let get_game_score line = 
-  let right_side = 
-    match String.split_on_char ':' line with
-    | _::b::[] -> b
-    | _ -> failwith "oops!"
-  in
-  let (winners, drawn) = 
-    match String.split_on_char '|' right_side |> List.map parse_int_list with
-    | a::b::[] -> (a, b)
-    | _ -> failwith "failed!"
-  in
+  let (card_s, values) = parse_twople ':' line in
+  let _ = parse_card card_s in
+  let (winners, drawn) = parse_int_lists values in
   let winners = List.fold_left (fun map num -> IntSet.add num map) IntSet.empty winners in
   List.fold_left (fun score num -> if IntSet.mem num winners then Int.max (score * 2) 1 else score) 0 drawn
 
