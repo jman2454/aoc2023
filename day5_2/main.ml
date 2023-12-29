@@ -208,6 +208,7 @@ humidity-to-location map:
 (* splits on colons into newline-delineated sections *)
 let get_sections = String.split_on_char ':' >> List.map (String.split_on_char '\n')
 
+(* would be better if we did a logn search to find starting index and iterated from there, but c'est la vie *)
 let get_ranges sorted (start, len) =
   let rec helper list (x1, l1) acc = 
     if l1 <= 0 then acc else 
