@@ -16,7 +16,7 @@ let (times, dists) =
         (fun s -> 
           List.nth (String.split_on_char ':' s) 1
           |> String.split_on_char ' '
-          |> List.fold_left (fun acc s -> acc ^ s) ""
+          |> List.fold_left (^) ""
           |> float_of_string))
 
 let solve (t,d) = 
