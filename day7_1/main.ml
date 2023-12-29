@@ -38,9 +38,9 @@ let hand_strength hand =
   | (2, l) -> non_high_card_min + if List.length l > 1 then 1 else 0
   | _ -> high_card
 
-let compare_hands h1 h2 = 
-  let (s1, s2) = (hand_strength h1, hand_strength h2) in
-  let strengths hand = List.map (fun c -> CharMap.find c card_strengths) (hand |> list_of_string) in
+let strengths hand = List.map (fun c -> CharMap.find c card_strengths) (hand |> list_of_string)
+
+let compare_hands h1 s1 h2 s2 = 
   if s1 = s2 then 
     List.compare Int.compare (strengths h1) (strengths h2)
   else
@@ -51,10 +51,12 @@ let parse_bets input =
   |> List.filter ((<>) "") 
   |> List.map (String.split_on_char ' ' >> list_to_twople_p id int_of_string)
 
-let sort_bets bets = 
-  List.sort (fun (h1, _) (h2, _) -> compare_hands h1 h2) bets
+let with_score bets = List.map (fun (h, b) -> (h, b, hand_strength h)) bets
 
-let score bets = List.mapi (fun i (_, b) -> (i+1) * b) bets |> List.fold_left (+) 0
+let sort_bets bets = 
+  List.sort (fun (h1, _, s1) (h2, _, s2) -> compare_hands h1 s1 h2 s2) bets
+
+let score bets = List.mapi (fun i (_, b, _) -> (i+1) * b) bets |> List.fold_left (+) 0
 
 let input = "32T3K 765
 T55J5 684
@@ -62,5 +64,5 @@ KK677 28
 KTJJT 220
 QQQJA 483"
 
-let result = parse_bets input |> sort_bets |> score
+let result = parse_bets input |> with_score |> sort_bets |> score
 let () = Printf.printf "%d\n" result
