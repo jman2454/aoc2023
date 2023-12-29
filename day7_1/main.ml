@@ -14,7 +14,7 @@ let list_to_twople_p parse_first parse_second lst =
 let get_default_c map key default = Option.value (CharMap.find_opt key map) ~default:default
 let get_default_i map key default = Option.value (IntMap.find_opt key map) ~default:default
 
-let list_of_string = String.fold_left (fun acc c -> c::acc) [] >> List.rev
+let list_of_string s = String.fold_right (fun c acc -> c::acc) s []
 let cards = list_of_string "23456789TJQKA"
 
 let (card_strengths, _) = 
