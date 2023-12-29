@@ -22,7 +22,6 @@ let (card_strengths, _) =
   (CharMap.empty, 0) 
   cards
 
-let non_high_card_min = (CharMap.find (List.rev cards |> List.hd) card_strengths) + 1
 let map_inverse map = 
   CharMap.fold (fun c count revved -> IntMap.add count (get_default_i revved count [] |> List.cons c) revved) map IntMap.empty
 
@@ -30,10 +29,10 @@ let hand_strength hand =
   let counts = String.fold_left (fun map c -> 
     (CharMap.add c ((get_default_c map c 0) + 1) map)) CharMap.empty hand |> map_inverse in
   match IntMap.max_binding counts with 
-  | (5, _) -> non_high_card_min + 6
-  | (4, _) -> non_high_card_min + 5
-  | (3, _) -> non_high_card_min + if IntMap.mem 2 counts then 4 else 3
-  | (2, l) -> non_high_card_min + if List.length l > 1 then 2 else 1
+  | (5, _) -> 6
+  | (4, _) -> 5
+  | (3, _) -> if IntMap.mem 2 counts then 4 else 3
+  | (2, l) -> if List.length l > 1 then 2 else 1
   | _ -> 0
 
 let strengths hand = List.map (fun c -> CharMap.find c card_strengths) (hand |> list_of_string)
