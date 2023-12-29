@@ -19,7 +19,7 @@ let (times, dists) =
           |> List.fold_left (fun acc s -> acc ^ s) ""
           |> float_of_string))
 
-let solve t d = 
+let solve (t,d) = 
   let a = -1.0 in 
   let b = t in 
   let c = Float.neg d in
@@ -32,6 +32,6 @@ let solve t d =
   (Float.floor s2 |> Int.of_float) - (Float.ceil s1 |> Int.of_float) + 1 |> abs
 
 let races = List.combine [times] [dists]
-let result = List.fold_left (fun acc (t, d) -> acc * (solve t d)) 1 races
+let result = List.map solve races |> List.fold_left Int.mul 1
 
 let () = Printf.printf "%d\n" result
