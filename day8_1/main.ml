@@ -18,6 +18,7 @@ let parse_map lines =
 
 let parse_seq s = String.fold_right (fun c l -> c::l) s [] |> Buffer.of_list
 
+(* we could have O(1) neighbor lookup with some mutable structures, but I don't wanna! *)
 let rec find_zzz start buf map count = 
   match start with 
   | "ZZZ" -> count
