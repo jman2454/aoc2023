@@ -58,8 +58,6 @@ let sort_bets bets =
 
 let score bets = List.mapi (fun i (_, b, _) -> (i+1) * b) bets |> List.fold_left (+) 0
 
-(* Printf.printf "\t(%d, %d, %s, type: %d),\n" b (i+1) h s;  *)
-
 let input = "35229 30
 Q379J 837
 88Q8Q 841
