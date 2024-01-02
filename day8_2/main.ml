@@ -44,7 +44,7 @@ let get_result input =
     let map = parse_map (rest |> List.filter ((<>) "")) in 
     let starts = StringMap.fold (fun key _ l -> if key.[String.length key - 1] = 'A' then key::l else l) map [] in
     let lens = List.map (find_zs buf map 0) starts in
-    List.fold_left (fun lcm next -> get_lcm lcm next) 1 lens
+    List.fold_left get_lcm 1 lens
   | _ -> failwith "bad!"
 
 let input = "LLRLLRRLRLRRRLRRLLRRRLRLRLRRLRRRLRRLRLRLLRLLLRRRLRRLRRRLRRRLRRRLRLRRLLRRLRRLRRLRRRLRLRRRLLRLRRLRRRLRLRRRLRRRLRLRRRLLRRRLRRRLRLRRLRLRRRLLRRLRRLRRLRRLRLRLRRRLLRRRLRRLRRRLRLRLRRRLLRLRRLLRLRRLRLRRRLRLRRLLRRRLLRRLRLRLLRLLRRLRRLLRRLRLRRLRLRLRRRLRRLRLLLLRRLRLRLRRRLLLRRRLRRLRRLRLLRLRRRLLLRRRLRRRLRRRR

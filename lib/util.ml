@@ -11,3 +11,8 @@ let rec print_int_list list =
   | [] -> Printf.printf "%!"
   | a::[] -> Printf.printf "%d\n%!" a
   | a::rest -> Printf.printf "%d, " a; print_int_list rest
+
+let print_return_int i = 
+  Printf.printf "%d\n" i; i
+
+(* monad for printing! *)
