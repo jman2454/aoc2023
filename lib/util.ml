@@ -12,6 +12,12 @@ let rec print_int_list list =
   | a::[] -> Printf.printf "%d\n%!" a
   | a::rest -> Printf.printf "%d, " a; print_int_list rest
 
+let rec print_char_list list =
+  match list with 
+  | [] -> Printf.printf "%!"
+  | a::[] -> Printf.printf "%c\n%!" a
+  | a::rest -> Printf.printf "%c, " a; print_char_list rest
+
 let print_return_int i = 
   Printf.printf "%d\n" i; i
 
