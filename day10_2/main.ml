@@ -45,8 +45,6 @@ module TwoListQueue = struct
     | t -> t, b
 end
 
-let second (_, b) = b
-
 let get_connections pos input_len input =
   let rl = row_len input in 
   let c = input.[pos] in
@@ -54,13 +52,9 @@ let get_connections pos input_len input =
   let t2 = 
   List.combine deltas @@ List.map (walk_pos pos rl input_len) deltas 
   |> List.filter_map (fun (d, p) -> Option.map (fun pp -> (d, pp)) p)
-  |> List.filter (
-    fun ((dx, dy), p) -> 
-      CharMap.find_opt input.[p] connections 
-      |> Option.map (List.mem (-dx, -dy)) 
-      |> Option.value ~default:false) 
-  in
-  List.split t2 |> second
+  |> List.filter (fun ((dx, dy), p) -> CharMap.find_opt input.[p] connections |> Option.map (List.mem (-dx, -dy)) |> Option.value ~default:false) in
+  let (_, b) = List.split t2 in 
+  b
 
 let rec bfs input input_len (queue, visited, max) = 
   if TwoListQueue.is_empty queue then 
