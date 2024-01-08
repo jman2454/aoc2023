@@ -1,6 +1,7 @@
 module CharSet = Set.Make(Char)
 module IntSet = Set.Make(Int)
 module CharMap = Map.Make(Char)
+module Queue = Aoc.Queue
 
 let row_len input = (String.index_opt input '\n' |> Option.value ~default:(String.length input)) + 1
 
@@ -22,29 +23,6 @@ let connections =
     ('S', [(1,0);(-1,0);(0,1);(0,-1)])
   ] |> List.fold_left (fun map (c, steps) -> CharMap.add c steps map) CharMap.empty
 
-module TwoListQueue = struct
-  (* AF: (f, b) represents the queue f @ (List.rev b).
-     RI: given (f, b), if f is empty then b is empty. *)
-  type 'a t = 'a list * 'a list
-
-  let empty : 'a t = [], []
-
-  let is_empty ((f, _) : 'a t) = 
-    f = []
-
-  let enq x (f, b) =
-    if f = [] then [x], []
-    else f, x :: b
-
-  let front (f, _) = 
-    List.hd f 
-
-  let deq (f, b) =
-    match List.tl f with
-    | [] -> List.rev b, []
-    | t -> t, b
-end
-
 let second (_, b) = b
 
 let get_connections pos input_len input =
@@ -62,15 +40,15 @@ let get_connections pos input_len input =
   |> second
 
 let rec bfs input input_len (queue, visited, max) = 
-  if TwoListQueue.is_empty queue then 
+  if Queue.is_empty queue then 
     max
   else
-    let (pos, depth) = TwoListQueue.front queue in
+    let (pos, depth) = Queue.front queue in
     let neighbors = get_connections pos input_len input in
     let new_queue = 
       neighbors
       |> List.filter (fun p -> IntSet.mem p visited |> not)
-      |> List.fold_left (fun q n -> TwoListQueue.enq (n, depth + 1) q) (TwoListQueue.deq queue) in
+      |> List.fold_left (fun q n -> Queue.enq (n, depth + 1) q) (Queue.deq queue) in
     let new_max = Int.max max depth in
     bfs input input_len (new_queue, IntSet.add pos visited, new_max)
 
@@ -216,5 +194,5 @@ FJ-J-77..J7JF-JJJJLFJ|7--7-|.LJ|J.JJ-7-FFJ|.L||F7J|.|L|7|L77||LL-7|7F|||.F|7----
 LJ.LF-FJ-L7-7JJL--F7-LFJ-L.7.L-J-|-L--.F7LJ---JJJ-L-FLLJ-.L|J|.L.L7-L7-F-LJLJ-|-|L-|--JJ|LJ-L-JFJL-JJL7-|LL7JJJL-LLFLFLJLJJLL-J-JL-.LLF-J--J"
 
 let () = 
-  bfs input (String.length input) (TwoListQueue.empty |> TwoListQueue.enq (String.index input 'S', 0), IntSet.empty, 0)
+  bfs input (String.length input) (Queue.empty |> Queue.enq (String.index input 'S', 0), IntSet.empty, 0)
   |> Printf.printf "%d\n"

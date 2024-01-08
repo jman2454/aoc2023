@@ -23,76 +23,53 @@ let connections =
     ('S', [(1,0);(-1,0);(0,1);(0,-1)])
   ] |> List.fold_left (fun map (c, steps) -> CharMap.add c steps map) CharMap.empty
 
-module TwoListQueue = struct
-  (* AF: (f, b) represents the queue f @ (List.rev b).
-     RI: given (f, b), if f is empty then b is empty. *)
-  type 'a t = 'a list * 'a list
-
-  let empty : 'a t = [], []
-
-  let is_empty ((f, _) : 'a t) = 
-    f = []
-
-  let enq x (f, b) =
-    if f = [] then [x], []
-    else f, x :: b
-
-  let front (f, _) = 
-    List.hd f 
-
-  let deq (f, b) =
-    match List.tl f with
-    | [] -> List.rev b, []
-    | t -> t, b
-end
-
-let second (_, b) = b
-
-let get_connections pos input_len input =
+let get_neighbor pos input_len input pred =
   let rl = row_len input in 
   let c = input.[pos] in
   let deltas = CharMap.find c connections in 
   List.combine deltas @@ List.map (walk_pos pos rl input_len) deltas 
   |> List.filter_map (fun (d, p) -> Option.map (fun pp -> (d, pp)) p)
-  |> List.find (
+  |> List.find_opt (
     fun ((dx, dy), p) -> 
       CharMap.find_opt input.[p] connections 
       |> Option.map (List.mem (-dx, -dy)) 
-      |> Option.value ~default:false)
-  |> List.map (fun ((_, dy), p) -> (dy, p))
+      |> Option.value ~default:false
+      |> (&&) (pred p))
+  |> Option.map (fun ((_, dy), p) -> (dy, p))
 
-let rec dfs input input_len 
-
-let rec bfs input input_len (queue, visited) = 
-  if TwoListQueue.is_empty queue then 
+let rec dfs input input_len (in_dy, pos) visited = 
+  if IntMap.mem pos visited then 
     visited
   else
-    (* add 'opposite' : bool to queue tuple. indicating loop direction *)
-    let (pos, depth, y_dir) = TwoListQueue.front queue in
-    let neighbors = get_connections pos input_len input in
-    let new_queue = 
-      neighbors
-      |> List.filter (fun (_, p) -> IntMap.mem p visited |> not)
-      |> List.fold_left (
-        fun q (dy, n) -> 
-          TwoListQueue.enq (n, depth + 1, 
-          if input.[n] = '-' then 
-            0 else 
-          if dy != 0 then 
-            dy
-          else
-            y_dir) q) (TwoListQueue.deq queue) in
-    bfs input input_len (new_queue, IntMap.add pos y_dir visited)
+    let opt = 
+      get_neighbor pos input_len input (
+        fun p -> 
+          (IntMap.mem p visited |> not) || input.[p] = 'S' && IntMap.exists (fun k _ -> input.[k] != 'S') visited
+      ) 
+    in
+    match opt with 
+    | None -> visited
+    | Some (out_dy, n_pos) ->
+      let mark = (if input.[pos] <> 'S' && out_dy = 0 && in_dy <> 0 then in_dy else out_dy) in 
+      let new_visited = IntMap.add pos mark visited in
+      if input.[n_pos] = 'S' then 
+        if out_dy <> 0 then IntMap.add n_pos out_dy new_visited else new_visited
+      else
+        dfs input input_len (out_dy, n_pos) new_visited
 
 let count visited input = 
   let ln = String.length input in
-  let rec h p (sum, mult) = 
+  let rec h p (sum, mult, p_d) = 
     if p = ln then 
       sum
     else 
-      (* if input.[p] = '\n' then h (p + 1) (sum, 0) else *)
-      if IntMap.mem p visited then h (p + 1) (sum, mult + IntMap.find p visited |> Int.min 1 |> Int.max 0) else h (p + 1) (sum + (1 * mult), mult) in 
-  h 0 (0, 0)
+      if IntMap.mem p visited then 
+        let dir = IntMap.find p visited in 
+        let new_mult = if p_d <> dir then (mult + dir) |> Int.min 1 |> Int.max (-1) else mult in
+        h (p + 1) (sum, new_mult, if dir <> 0 then dir else p_d)
+      else 
+        h (p + 1) (sum + (if mult <> 0 then 1 else 0), mult, 0) in 
+  h 0 (0, 0, 0)
 
 let input = "FF7FSF7F7F7F7F7F---7
 L|LJ||||||||||||F--J
@@ -106,5 +83,5 @@ L.L7LFJ|||||FJL7||LJ
 L7JLJL-JLJLJL--JLJ.L"
 
 let () = 
-  let set = bfs input (String.length input) (TwoListQueue.empty |> TwoListQueue.enq (String.index input 'S', 0, 0), IntSet.empty) in 
-  count (fun p -> IntSet.mem p set) input |> Printf.printf "%d\n"
+  let set = dfs input (String.length input) (0, String.index input 'S') IntMap.empty in 
+  count set input |> Printf.printf "%d\n"
