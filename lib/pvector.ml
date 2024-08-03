@@ -5,7 +5,7 @@ type 'a t =
   | Leaf of 'a * 'a
 
 let make_vec length def = 
-  if length = 0 then 
+  if length = 0 then
     Root(0, 2, Null)
   else
     let depth = max 2 @@ (Float.ceil @@ Float.log2 (float_of_int length) |> int_of_float) in
@@ -74,6 +74,24 @@ let at i vec =
       else 
         helper (order lsr 1) pos a
     | Root(_, _, t) -> helper (order lsr 1) pos t
+    | _ -> failwith "logical error"
+  in
+  helper (order vec) 0 vec
+
+let set i el vec = 
+  let l = len vec in 
+  if i >= l || i < 0 then 
+    failwith "Index out of bounds"
+  else 
+  let rec helper order pos = function
+    | Leaf(a, b) -> if i mod 2 = 0 then Leaf(el, b) else Leaf(a, el)
+    | Internal(a, b) -> 
+      let r_pos = pos + order in
+      if i >= r_pos then 
+        Internal(a, helper (order lsr 1) r_pos b)
+      else
+        Internal(helper (order lsr 1) pos a, b)
+    | Root(l, o, t) -> Root(l, o, helper (order lsr 1) pos t)
     | _ -> failwith "logical error"
   in
   helper (order vec) 0 vec
