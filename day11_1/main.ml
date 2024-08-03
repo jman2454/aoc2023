@@ -41,7 +41,7 @@ let cumsum_empty_cols s =
       h (empty && c = '.') grid (rowi + 1) coli
   in
   h true (Pvector.make_vec cols 0) 0 0
-  
+
 let input = "...#......
 .......#..
 #.........

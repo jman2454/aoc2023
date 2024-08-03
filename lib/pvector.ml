@@ -7,6 +7,9 @@ type 'a t =
 let (<<) l r = l lsl r
 let (>>) l r = l lsr r
 
+(* let's use ppx to make us be able to have arbitrary branching factor
+   leaves will be factor-tuples. then make this whole thing a functor of branching factor *)
+
 (* better v. of vec_from_generator where generator returns a 
    tuple of the value and the new context for next generator invoke *)
 
