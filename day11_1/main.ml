@@ -13,19 +13,24 @@ let piecewise_dist (x, y) (x2, y2) = Int.abs (y2 - y) + Int.abs (x2 - x)
 
 let cumsum_empty_rows s = 
   let rows = String.fold_left (fun count c -> if c = '\n' then count + 1 else count) 1 s in
+  if rows = 0 then Pvector.make_vec 0 0 else
   let (_, empty, cumsummed) = String.fold_left
     (fun (row_i, empty, grid) c -> 
       if c = '\n' then 
         let prev = if row_i = 0 then 0 else (grid --> (row_i - 1)) in 
         let addand = if empty then 1 else 0 in 
-        Printf.printf "insert %d at row %d\n" (prev + addand) row_i;
         (row_i + 1, true, (grid, row_i) <-- prev + addand)
       else
         (row_i, empty && c = '.', grid) 
     ) (0, true, Pvector.make_vec rows 0) s
   in
   let addand = if empty then 1 else 0 in
-  (cumsummed, rows - 1) <-- addand + (cumsummed --> (rows - 2))
+  let prev = if rows > 1 then cumsummed --> (rows - 2) else 0 in
+  (cumsummed, rows - 1) <-- addand + prev
+
+(* let cumsum_empty_cols s = 
+  let cols = String.index s '\n' in
+  0 *)
 
 let from i init = 
   let rec h i l = 
