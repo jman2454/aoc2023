@@ -1,6 +1,9 @@
+include Pvector
+
 let row_len input = String.index input '\n' + 1
 let pt i rl = i mod rl, i / rl
 let piecewise_dist (x, y) (x2, y2) = Int.abs (y2 - y) + Int.abs (x2 - x)
+
 
 let from i init = 
   let rec h i l = 
@@ -81,4 +84,8 @@ let input = "...#......
 .......#..
 #...#....."
 
-let () = input |> blowup |> ans |> Printf.printf "%d\n"
+(* store counts of points "behind" - then add millions to sum *)
+
+let () =
+input |> blowup |> ans |> Printf.printf "%d\n";
+Pvector.make_vec 9 false |> Pvector.count |> Printf.printf "%d\n"
