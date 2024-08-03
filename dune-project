@@ -16,7 +16,7 @@
  (name aoc)
  (synopsis "AoC 2023 Solutions")
  (description "My solutions for the 2023 Advent of Code challenge - I decided to solve in OCaml for fun and to refamiliarize myself with the language")
- (depends ocaml dune)
+ (depends ocaml dune alcotest)
  (tags
   (topics "to describe" your project)))
 
