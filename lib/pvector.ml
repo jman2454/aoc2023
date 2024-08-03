@@ -51,14 +51,19 @@ let is_null = function
 | _ -> false
 
 let to_str str_of_el vec = 
-  let last = ((len vec) mod 2) = 0 in
-  let rec h = function
+  let l = len vec in 
+  let rec h order pos = function
   | Null -> ""
-  | Leaf (a, b) -> if last then (str_of_el a ^ ", " ^ str_of_el b) else str_of_el a
-  | Internal (a, b) -> if not (is_null b) then h a ^ ", " ^ h b else h a
-  | Root (_, _, v) -> "[" ^ h v ^ "]"
+  | Leaf (a, b) -> 
+    if pos + 1 < l then (str_of_el a ^ ", " ^ str_of_el b) else str_of_el a
+  | Internal (a, b) -> 
+    if not (is_null b) then 
+      h (order >> 1) pos a ^ ", " ^ h (order >> 1) (pos + order) b 
+    else 
+      h (order >> 1) pos a
+  | Root (_, _, v) -> "[" ^ h (order >> 1) pos v ^ "]"
   in 
-  h vec
+  h (order vec) 0 vec
 
 let append el vec = 
   let target = len vec in 
@@ -123,16 +128,26 @@ let set i el vec =
 let (<--) (vec, i) el = set i el vec
 let (-->) vec i = at i vec
 
+(* map is wrong, need pos tracking *)
 let map fn vec = 
   let l = len vec in 
-  let do_last = l mod 2 = 0 in 
-  let rec map fn = function 
+  let rec map pos order = function 
     | Null -> Null
-    | Root (l, o, t) -> Root(l, o, map fn t)
-    | Internal (a, b) -> Internal(map fn a, map fn b)
-    | Leaf (a, b) -> Leaf(fn a, if do_last then fn b else b)
+    | Root (l, o, t) -> Root(l, o, map pos (order >> 1) t)
+    | Internal (a, b) -> Internal(map pos (order >> 1) a, map (pos + order) (order >> 1) b)
+    | Leaf (a, b) -> Leaf(fn a, if pos + 1 < l then fn b else b)
   in
-  map fn vec
+  map 0 (order vec) vec
+
+let fold_left fn acc vec = 
+  let l = len vec in 
+  let rec fl pos order acc = function 
+    | Null -> acc
+    | Root (_, _, t) -> fl pos (order >> 1) acc t
+    | Internal (a, b) -> fl (pos + order) (order >> 1) (fl pos (order >> 1) acc a) b
+    | Leaf (a, b) -> if pos + 1 < l then fn (fn acc a) b else fn acc a
+  in 
+  fl 0 (order vec) acc vec
 
 let rec count_slots tree = 
   match tree with 

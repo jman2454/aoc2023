@@ -133,6 +133,30 @@ let test_generator () =
   check int "generated is correct" 500002 (at 250001 v);
   check int "generated is correct" 500002 (at 250001 v2)
 
+let test_fold () =
+  let v = vec_from_generator 10 (fun i -> if i mod 2 = 0 then 1 else 0) in 
+  check int "fold && over alternating" 0 (fold_left (fun a b -> a land b) 1 v);
+  let v = vec_from_generator 10 (fun i -> if i mod 2 = 0 then 0 else 1) in 
+  check int "fold && over alternating" 0 (fold_left (fun a b -> a land b) 1 v);
+  let expected len = if (len / 2) mod 2 = 0 then 1 else 0 in
+  let test_xor len = 
+    let v = vec_from_generator len (fun i -> if i mod 2 = 0 then 0 else 1) in 
+    Printf.printf "LEN %d: %s\n" len (to_str string_of_int v);
+    check int "fold ^ over alternating" (expected len) (fold_left (fun a b -> a lxor b) 1 v);
+  in
+  test_xor 0;
+  test_xor 1;
+  test_xor 2;
+  test_xor 3;
+  let v = make_vec 3 0 in 
+  check string "should be" "[0, 0, 0]" @@ (to_str string_of_int v);
+  check int "slots" 4 @@ (count_slots v);
+  test_xor 4;
+  test_xor 5;
+  test_xor 10;
+  test_xor 11;
+  test_xor 12
+
 let () =
   run "PersistentVector" [
     "make_vec", [
@@ -165,4 +189,7 @@ let () =
     "generate", [
       test_case "Generate elements in vector" `Quick test_generator;
     ];
+    "fold", [
+      test_case "Fold elements of vector" `Quick test_fold;
+    ]
 ]
