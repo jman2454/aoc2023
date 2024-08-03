@@ -1,4 +1,4 @@
-include Pvector
+include Aoc.Pvector
 
 let row_len input = String.index input '\n' + 1
 let pt i rl = i mod rl, i / rl
@@ -86,21 +86,31 @@ let input = "...#......
 
 (* store counts of points "behind" - then add millions to sum *)
 
+(* print orders - should min order be 4? it might *)
+
+let print_slots_transparent vec = 
+  Aoc.Pvector.count_slots vec |> Printf.printf "%d\n";
+  vec
+
+let print_tree_transparent vec = 
+  Aoc.Pvector.tree_to_str vec |> Printf.printf "%s\n";
+  vec
+
 let () =
 input |> blowup |> ans |> Printf.printf "%d\n";
-let t = Pvector.make_vec 2 0 
-|> Pvector.append 1
-|> Pvector.append 2 
-|> Pvector.append 3 
-|> Pvector.append 4 
-|> Pvector.append 5 
+let t = Aoc.Pvector.make_vec 1 0 |> print_slots_transparent |> print_tree_transparent
+(* |> Aoc.Pvector.append 1 |> print_slots_transparent |> print_tree_transparent
+|> Aoc.Pvector.append 2 |> print_slots_transparent |> print_tree_transparent
+|> Aoc.Pvector.append 3 |> print_slots_transparent |> print_tree_transparent
+|> Aoc.Pvector.append 4 |> print_slots_transparent |> print_tree_transparent
+|> Aoc.Pvector.append 5 |> print_slots_transparent |> print_tree_transparent *)
 in 
-t |> Pvector.at 0 |> Printf.printf "%d\n";
-t |> Pvector.at 1 |> Printf.printf "%d\n";
-t |> Pvector.at 2 |> Printf.printf "%d\n";
-t |> Pvector.at 3 |> Printf.printf "%d\n";
-t |> Pvector.at 4 |> Printf.printf "%d\n";
-t |> Pvector.at 5 |> Printf.printf "%d\n";
-t |> Pvector.at 6 |> Printf.printf "%d\n";
-(* t |> Pvector.count_slots |> Printf.printf "%d\n";
-t |> Pvector.tree_to_str |> Printf.printf "%s\n" *)
+Printf.printf "getting values";
+t |> Aoc.Pvector.at 0 |> Printf.printf "%d\n";
+(* t |> Aoc.Pvector.at 1 |> Printf.printf "%d\n";
+t |> Aoc.Pvector.at 2 |> Printf.printf "%d\n";
+t |> Aoc.Pvector.at 3 |> Printf.printf "%d\n";
+t |> Aoc.Pvector.at 4 |> Printf.printf "%d\n";
+t |> Aoc.Pvector.at 5 |> Printf.printf "%d\n"; *)
+(* t |> Aoc.Pvector.count_slots |> Printf.printf "%d\n";
+t |> Aoc.Pvector.tree_to_str |> Printf.printf "%s\n" *)

@@ -5,18 +5,22 @@ type 'a t =
   | Leaf of 'a * 'a
 
 let make_vec length def = 
-  let depth = Float.ceil @@ Float.log2 (float_of_int length) |> int_of_float in
-  let total = 1 lsl depth in 
-  let rec helper order pos = 
-    if order = 1 then 
-      (if pos >= length then Null else Leaf (def, def))
-    else if order = total then 
-      Root(length, total, helper (order lsr 1) pos)
-    else
-      let sub_order = order lsr 1 in 
-      Internal (helper sub_order pos, helper sub_order @@ pos + order)
-  in
-  helper total 0
+  if length = 0 then 
+    Root(0, 2, Null)
+  else
+    let depth = max 2 @@ (Float.ceil @@ Float.log2 (float_of_int length) |> int_of_float) in
+    let total = 1 lsl depth in 
+    let rec helper order pos = 
+      if order = 1 then 
+        (if pos >= length then Null else Leaf(def, def))
+      else if order = total then 
+        Root(length, total, helper (order lsr 1) pos)
+      else
+        let sub_order = order lsr 1 in 
+        Internal (helper sub_order pos, helper sub_order @@ pos + order)
+    in
+    
+    helper total 0
 
 let len = function 
 | Root (len, _, _) -> len
@@ -58,7 +62,7 @@ let append el vec =
 
 let at i vec = 
   let l = len vec in 
-  if i >= l then 
+  if i >= l || i < 0 then 
     failwith "Index out of bounds"
   else 
   let rec helper order pos = function
