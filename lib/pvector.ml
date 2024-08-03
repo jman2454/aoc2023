@@ -43,6 +43,20 @@ let rec tree_to_str = function
 | Internal (a, b) -> "Internal(" ^ tree_to_str a ^ ", " ^ tree_to_str b ^ ")"
 | Root (l, o, t) -> "Root(" ^ (string_of_int l) ^ ", " ^ (string_of_int o) ^ ", " ^ tree_to_str t ^ ")"
 
+let is_null = function 
+| Null -> true 
+| _ -> false
+
+let to_str str_of_el vec = 
+  let last = ((len vec) mod 2) = 0 in
+  let rec h = function
+  | Null -> ""
+  | Leaf (a, b) -> if last then (str_of_el a ^ ", " ^ str_of_el b) else str_of_el a
+  | Internal (a, b) -> if not (is_null b) then h a ^ ", " ^ h b else h a
+  | Root (_, _, v) -> "[" ^ h v ^ "]"
+  in 
+  h vec
+
 let append el vec = 
   let target = len vec in 
   let rec helper t pos order = 
@@ -104,6 +118,7 @@ let set i el vec =
   helper (order vec) 0 vec
 
 let (<--) (vec, i) el = set i el vec
+let (-->) vec i = at i vec
 
 let map fn vec = 
   let l = len vec in 

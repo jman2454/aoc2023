@@ -1,9 +1,24 @@
-include Aoc.Pvector
+open Aoc
+include Pvector
+
+(* let (<--) = Pvector.(<--)
+let (-->) = Pvector.(-->) *)
 
 let row_len input = String.index input '\n' + 1
 let pt i rl = i mod rl, i / rl
 let piecewise_dist (x, y) (x2, y2) = Int.abs (y2 - y) + Int.abs (x2 - x)
 
+(* let create_grid l = 
+  Pvector.make_vec l (Pvector.make_vec l 0) *)
+
+(* let cumsum_empty_rows s storage = 
+  String.fold_left
+    (fun (row_i, empty, grid) c -> 
+      if c = '\n' then 
+        (row_i + 1, true, if empty then (grid, row_i) <-- (grid --> (row_i - 1)) + 1 else grid)
+      else
+        (row_i, empty && c = '.', grid) 
+    ) (0, true, storage) s *)
 
 let from i init = 
   let rec h i l = 
@@ -99,14 +114,15 @@ let print_tree_transparent vec =
 let () =
 input |> blowup |> ans |> Printf.printf "%d\n";
 let t = Aoc.Pvector.make_vec 1 0 |> print_slots_transparent |> print_tree_transparent
-(* |> Aoc.Pvector.append 1 |> print_slots_transparent |> print_tree_transparent
+|> Aoc.Pvector.append 1 |> print_slots_transparent |> print_tree_transparent
 |> Aoc.Pvector.append 2 |> print_slots_transparent |> print_tree_transparent
 |> Aoc.Pvector.append 3 |> print_slots_transparent |> print_tree_transparent
 |> Aoc.Pvector.append 4 |> print_slots_transparent |> print_tree_transparent
-|> Aoc.Pvector.append 5 |> print_slots_transparent |> print_tree_transparent *)
+|> Aoc.Pvector.append 5 |> print_slots_transparent |> print_tree_transparent
 in 
 Printf.printf "getting values";
 t |> Aoc.Pvector.at 0 |> Printf.printf "%d\n";
+t |> Aoc.Pvector.to_str string_of_int |> Printf.printf "%s\n";
 (* t |> Aoc.Pvector.at 1 |> Printf.printf "%d\n";
 t |> Aoc.Pvector.at 2 |> Printf.printf "%d\n";
 t |> Aoc.Pvector.at 3 |> Printf.printf "%d\n";
