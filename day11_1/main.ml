@@ -88,4 +88,19 @@ let input = "...#......
 
 let () =
 input |> blowup |> ans |> Printf.printf "%d\n";
-Pvector.make_vec 9 false |> Pvector.count |> Printf.printf "%d\n"
+let t = Pvector.make_vec 2 0 
+|> Pvector.append 1
+|> Pvector.append 2 
+|> Pvector.append 3 
+|> Pvector.append 4 
+|> Pvector.append 5 
+in 
+t |> Pvector.at 0 |> Printf.printf "%d\n";
+t |> Pvector.at 1 |> Printf.printf "%d\n";
+t |> Pvector.at 2 |> Printf.printf "%d\n";
+t |> Pvector.at 3 |> Printf.printf "%d\n";
+t |> Pvector.at 4 |> Printf.printf "%d\n";
+t |> Pvector.at 5 |> Printf.printf "%d\n";
+t |> Pvector.at 6 |> Printf.printf "%d\n";
+(* t |> Pvector.count_slots |> Printf.printf "%d\n";
+t |> Pvector.tree_to_str |> Printf.printf "%s\n" *)
