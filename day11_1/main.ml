@@ -4,8 +4,8 @@ module Pvector = Aoc.Pvector
 let (<--) = Pvector.(<--)
 let (-->) = Pvector.(-->)
 
-(* let row_len input = String.index input '\n' + 1 *)
-(* let pt i rl = i mod rl, i / rl *)
+let row_len input = String.index input '\n' + 1
+let pt i rl = i / rl, i mod rl
 (* let piecewise_dist (x, y) (x2, y2) = Int.abs (y2 - y) + Int.abs (x2 - x) *)
 
 let cumsum_empty_rows s = 
@@ -42,6 +42,18 @@ let cumsum_empty_cols s =
   in
   h true (Pvector.make_vec cols 0) 0 0
 
+let extract_points s = 
+  let l = String.length s in 
+  let rl = row_len s in
+  let rec h i acc = 
+    if i = l then acc else
+    let c = String.get s i in 
+    match c with 
+    | '#' -> h (i + 1) (Pvector.append (pt i rl) acc)
+    | _ -> h (i + 1) acc
+  in
+  h 0 Pvector.empty
+
 let input = "...#......
 .......#..
 #.........
@@ -56,3 +68,6 @@ let input = "...#......
 let () =
 cumsum_empty_rows input |> Pvector.to_str string_of_int |> Printf.printf "Rows cumsummed: %s\n";
 cumsum_empty_cols input |> Pvector.to_str string_of_int |> Printf.printf "Cols cumsummed: %s\n";
+extract_points input 
+|> Pvector.to_str (fun (a, b) -> "(" ^ string_of_int a ^ ", " ^ string_of_int b ^ ")")
+|> Printf.printf "%s\n"

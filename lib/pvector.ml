@@ -26,11 +26,13 @@ let vec_from_generator length generator =
         Root(length, total, helper (order >> 1) pos)
       else
         let sub_order = order >> 1 in 
-        Internal (helper sub_order pos, helper sub_order @@ pos + order)
+        let do_right = pos + order < length in 
+        Internal (helper sub_order pos, if not do_right then Null else helper sub_order @@ pos + order)
     in
     helper total 0
 
 let make_vec length default = vec_from_generator length (fun _ -> default)
+let empty = Root(0, 2, Null)
 
 let len = function 
 | Root (len, _, _) -> len

@@ -141,7 +141,6 @@ let test_fold () =
   let expected len = if (len / 2) mod 2 = 0 then 1 else 0 in
   let test_xor len = 
     let v = vec_from_generator len (fun i -> if i mod 2 = 0 then 0 else 1) in 
-    Printf.printf "LEN %d: %s\n" len (to_str string_of_int v);
     check int "fold ^ over alternating" (expected len) (fold_left (fun a b -> a lxor b) 1 v);
   in
   test_xor 0;
