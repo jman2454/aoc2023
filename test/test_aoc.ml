@@ -83,45 +83,55 @@ let test_two_element_leaves () =
   check int "first element of second leaf" 3 (at 2 v);
   check int "second element of second leaf" 4 (at 3 v)
 
-  let test_set () =
-    (* Test setting an element in a small vector *)
-    let v1 = make_vec 3 42 in
-    let v1_updated = set 1 99 v1 in
-    check int "original vector unchanged" 42 (at 1 v1);
-    check int "updated vector changed" 99 (at 1 v1_updated);
-    check int "other elements unchanged" 42 (at 0 v1_updated);
-    check int "other elements unchanged" 42 (at 2 v1_updated);
-  
-    (* Test setting the first element *)
-    let v2 = make_vec 5 10 in
-    let v2_updated = set 0 100 v2 in
-    check int "set first element" 100 (at 0 v2_updated);
-    check int "other elements unchanged" 10 (at 1 v2_updated);
-  
-    (* Test setting the last element *)
-    let v3 = make_vec 5 10 in
-    let v3_updated = set 4 200 v3 in
-    check int "set last element" 200 (at 4 v3_updated);
-    check int "other elements unchanged" 10 (at 3 v3_updated);
-  
-    (* Test setting an element in a larger vector *)
-    let v4 = make_vec 20 5 in
-    let v4_updated = set 15 300 v4 in
-    check int "set element in larger vector" 300 (at 15 v4_updated);
-    check int "other elements unchanged" 5 (at 14 v4_updated);
-    check int "other elements unchanged" 5 (at 16 v4_updated);
-  
-    (* Test setting an element multiple times *)
-    let v5 = make_vec 3 42 in
-    let v5_updated1 = set 1 99 v5 in
-    let v5_updated2 = set 1 100 v5_updated1 in
-    check int "set element multiple times" 100 (at 1 v5_updated2);
-  
-    (* Test error cases *)
-    check_raises "set out of bounds (upper)" (Failure "Index out of bounds") 
-      (fun () -> ignore (set (len v1) 0 v1));
-    check_raises "set out of bounds (lower)" (Failure "Index out of bounds")
-      (fun () -> ignore (set (-1) 0 v1))
+let test_set () =
+  (* Test setting an element in a small vector *)
+  let v1 = make_vec 3 42 in
+  let v1_updated = (v1, 1) <-- 99 in
+  check int "original vector unchanged" 42 (at 1 v1);
+  check int "updated vector changed" 99 (at 1 v1_updated);
+  check int "other elements unchanged" 42 (at 0 v1_updated);
+  check int "other elements unchanged" 42 (at 2 v1_updated);
+
+  (* Test setting the first element *)
+  let v2 = make_vec 5 10 in
+  let v2_updated = (v2, 0) <-- 100 in
+  check int "set first element" 100 (at 0 v2_updated);
+  check int "other elements unchanged" 10 (at 1 v2_updated);
+
+  (* Test setting the last element *)
+  let v3 = make_vec 5 10 in
+  let v3_updated = (v3, 4) <-- 200 in
+  check int "set last element" 200 (at 4 v3_updated);
+  check int "other elements unchanged" 10 (at 3 v3_updated);
+
+  (* Test setting an element in a larger vector *)
+  let v4 = make_vec 20 5 in
+  let v4_updated = (v4, 15) <-- 300 in
+  check int "set element in larger vector" 300 (at 15 v4_updated);
+  check int "other elements unchanged" 5 (at 14 v4_updated);
+  check int "other elements unchanged" 5 (at 16 v4_updated);
+
+  (* Test setting an element multiple times *)
+  let v5 = make_vec 3 42 in
+  let v5_updated1 = (v5, 1) <-- 99 in
+  let v5_updated2 = (v5_updated1, 1) <-- 100 in
+  check int "set element multiple times" 100 (at 1 v5_updated2);
+
+  (* Test error cases *)
+  check_raises "set out of bounds (upper)" (Failure "Index out of bounds") 
+    (fun () -> ignore ((v1, len v1) <-- 0));
+  check_raises "set out of bounds (lower)" (Failure "Index out of bounds")
+    (fun () -> ignore ((v1, -1) <-- 0))
+
+let test_generator () =
+  let v = vec_from_generator 1000000 (fun i -> i * 2) in 
+  check int "generated is correct" 500000 (at 250000 v);
+  check int "generated is correct" 0 (at 0 v);
+  let v2 = (v, 250000) <-- 1 in 
+  check int "generated is correct" 500000 (at 250000 v);
+  check int "generated is correct" 1 (at 250000 v2);
+  check int "generated is correct" 500002 (at 250001 v);
+  check int "generated is correct" 500002 (at 250001 v2)
 
 let () =
   run "PersistentVector" [
@@ -152,4 +162,7 @@ let () =
     "set", [
       test_case "Set elements in vector" `Quick test_set;
     ];
-  ]
+    "generate", [
+      test_case "Generate elements in vector" `Quick test_generator;
+    ];
+]

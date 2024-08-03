@@ -4,23 +4,30 @@ type 'a t =
   | Internal of 'a t * 'a t
   | Leaf of 'a * 'a
 
-let make_vec length def = 
+let (<<) l r = l lsl r
+let (>>) l r = l lsr r
+
+(* better v. of vec_from_generator where generator returns a 
+   tuple of the value and the new context for next generator invoke *)
+
+let vec_from_generator length generator = 
   if length = 0 then
     Root(0, 2, Null)
   else
     let depth = max 2 @@ (Float.ceil @@ Float.log2 (float_of_int length) |> int_of_float) in
-    let total = 1 lsl depth in 
+    let total = 1 << depth in 
     let rec helper order pos = 
-      if order = 1 then 
-        (if pos >= length then Null else Leaf(def, def))
+      if order = 1 then
+        (if pos >= length then Null else Leaf(generator pos, generator @@ pos + 1))
       else if order = total then 
-        Root(length, total, helper (order lsr 1) pos)
+        Root(length, total, helper (order >> 1) pos)
       else
-        let sub_order = order lsr 1 in 
+        let sub_order = order >> 1 in 
         Internal (helper sub_order pos, helper sub_order @@ pos + order)
     in
-    
     helper total 0
+
+let make_vec length default = vec_from_generator length (fun _ -> default)
 
 let len = function 
 | Root (len, _, _) -> len
@@ -44,19 +51,19 @@ let append el vec =
       if order = 1 then 
         Leaf(el, el) 
       else
-        Internal(helper Null pos (order lsr 1), Null)
+        Internal(helper Null pos (order >> 1), Null)
     | Leaf (a, _) -> Leaf(a, el) (* make elements optional so we're clear? *)
     | Root (len, order, n) ->
        if order = len then (* full tree, so we need a new root one level up *)
-        Root(len + 1, order lsl 1, helper (Internal(n, Null)) pos order)
+        Root(len + 1, order << 1, helper (Internal(n, Null)) pos order)
        else
-        Root(len + 1, order, helper n pos (order lsr 1))
+        Root(len + 1, order, helper n pos (order >> 1))
     | Internal (a, b) -> 
         let r_pos = pos + order in 
         if target >= r_pos then
-          Internal(a, helper b r_pos (order lsr 1))
+          Internal(a, helper b r_pos (order >> 1))
         else 
-          Internal(helper a pos (order lsr 1), b)
+          Internal(helper a pos (order >> 1), b)
   in 
   helper vec 0 @@ order vec
 
@@ -70,10 +77,10 @@ let at i vec =
     | Internal(a, b) -> 
       let r_pos = pos + order in 
       if i >= r_pos then 
-        helper (order lsr 1) r_pos b
+        helper (order >> 1) r_pos b
       else 
-        helper (order lsr 1) pos a
-    | Root(_, _, t) -> helper (order lsr 1) pos t
+        helper (order >> 1) pos a
+    | Root(_, _, t) -> helper (order >> 1) pos t
     | _ -> failwith "logical error"
   in
   helper (order vec) 0 vec
@@ -88,13 +95,26 @@ let set i el vec =
     | Internal(a, b) -> 
       let r_pos = pos + order in
       if i >= r_pos then 
-        Internal(a, helper (order lsr 1) r_pos b)
+        Internal(a, helper (order >> 1) r_pos b)
       else
-        Internal(helper (order lsr 1) pos a, b)
-    | Root(l, o, t) -> Root(l, o, helper (order lsr 1) pos t)
+        Internal(helper (order >> 1) pos a, b)
+    | Root(l, o, t) -> Root(l, o, helper (order >> 1) pos t)
     | _ -> failwith "logical error"
   in
   helper (order vec) 0 vec
+
+let (<--) (vec, i) el = set i el vec
+
+let map fn vec = 
+  let l = len vec in 
+  let do_last = l mod 2 = 0 in 
+  let rec map fn = function 
+    | Null -> Null
+    | Root (l, o, t) -> Root(l, o, map fn t)
+    | Internal (a, b) -> Internal(map fn a, map fn b)
+    | Leaf (a, b) -> Leaf(fn a, if do_last then fn b else b)
+  in
+  map fn vec
 
 let rec count_slots tree = 
   match tree with 
