@@ -163,6 +163,16 @@ let any pred vec =
   in
   h 0 (order vec) vec
 
+let anyi pred vec = 
+  let l = len vec in 
+  let rec h pos order = function 
+  | Null -> false
+  | Root(_, _, t) -> h pos (order >> 1) t
+  | Internal(a, b) -> h pos (order >> 1) a || h (pos + order) (order >> 1) b
+  | Leaf(a, b) -> pred pos a || pos + 1 < l && pred (pos + 1) b
+  in
+  h 0 (order vec) vec
+
 let fold_left fn acc vec = 
   let l = len vec in 
   let rec fl pos order acc = function 
