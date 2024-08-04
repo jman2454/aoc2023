@@ -156,6 +156,18 @@ let test_fold () =
   test_xor 11;
   test_xor 12
 
+let test_ctx_generator () =
+  let v = of_list [0; 1; 2; 3; 10; 909231; 1232] in
+  check string "Stringified ctx generated" "[0, 1, 2, 3, 10, 909231, 1232]" (to_str string_of_int v)
+
+let test_any () = 
+  let v = of_list [false; false; true; false; true] in 
+  check bool "Any" true @@ any (fun b -> b) v;
+  let v = of_list [123; 1384; 3223; 21; 23] in 
+  check bool "Any" false @@ any (fun i -> Float.log2 (Float.of_int i) = Float.of_int 0) v;
+  check bool "Any" true @@ any (fun i -> 
+    Float.log2 (Float.of_int i) |> Float.is_integer) @@ append 8 v
+
 let () =
   run "PersistentVector" [
     "make_vec", [
@@ -187,8 +199,12 @@ let () =
     ];
     "generate", [
       test_case "Generate elements in vector" `Quick test_generator;
+      test_case "Generate els" `Quick test_ctx_generator;
     ];
     "fold", [
       test_case "Fold elements of vector" `Quick test_fold;
-    ]
+    ];
+    "any", [
+      test_case "Check els matching predicate" `Quick test_any;
+    ];
 ]
