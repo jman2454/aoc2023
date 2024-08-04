@@ -56,7 +56,7 @@ let blowup line =
   b ^ "," ^ b ^ "," ^ b ^ "," ^ b ^ "," ^ b
   | _ -> failwith "invalid input"
 
-let input = ".???..??##.. 2,4"
+let input = "??? 1"
 
 let () = 
   let make_memo slots groups = (Pvector.make_vec (Pvector.len slots + 1) (Pvector.make_vec (Pvector.len groups + 1) (-1))) in 
