@@ -1,7 +1,6 @@
 include Aoc.Pvector
 
 module Pvector = Aoc.Pvector
-let (<--) = Pvector.(<--)
 let (-->) = Pvector.(-->)
 
 let row_len input = String.index input '\n' + 1
@@ -16,14 +15,14 @@ let cumsum_empty_rows s =
       if c = '\n' then 
         let prev = if row_i = 0 then 0 else (grid --> (row_i - 1)) in 
         let addand = if empty then 1 else 0 in 
-        (row_i + 1, true, (grid, row_i) <-- prev + addand)
+        (row_i + 1, true, Pvector.append (prev + addand) grid)
       else
         (row_i, empty && c = '.', grid) 
-    ) (0, true, Pvector.make_vec rows 0) s
+    ) (0, true, Pvector.empty) s
   in
   let addand = if empty then 1 else 0 in
   let prev = if rows > 1 then cumsummed --> (rows - 2) else 0 in
-  (cumsummed, rows - 1) <-- addand + prev
+  Pvector.append (addand + prev) cumsummed
 
 let cumsum_empty_cols s = 
   let rows = String.fold_left (fun count c -> if c = '\n' then count + 1 else count) 1 s in
@@ -34,13 +33,13 @@ let cumsum_empty_cols s =
       let prev = if coli = 0 then 0 else grid --> (coli - 1) in 
       let addand = if empty then 1 else 0 in 
       (* store result, compute next column *)
-      h true ((grid, coli) <-- (prev + addand)) 0 (coli + 1)
+      h true (Pvector.append (prev + addand) grid) 0 (coli + 1)
     else
       (* still checking this column *)
       let c = String.get s (rowi * (cols + 1) + coli) in 
       h (empty && c = '.') grid (rowi + 1) coli
   in
-  h true (Pvector.make_vec cols 0) 0 0
+  h true Pvector.empty 0 0
 
 let extract_points s = 
   let l = String.length s in 
