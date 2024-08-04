@@ -206,6 +206,9 @@ let vec_from_sequence generator ctx =
 let of_list lst = vec_from_sequence (function | next::rest -> Some(rest, next) | [] -> None) lst
 let of_string s = vec_from_generator (String.length s) (fun i -> String.get s i)
 
+let map_index i transform vec = 
+  (vec, i) <-- transform (vec --> i)
+
 let rec count_slots tree = 
   match tree with 
   | Null -> 0
