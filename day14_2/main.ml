@@ -45,11 +45,11 @@ let perpendicular = function | `Left -> `Up | `Right -> `Up | `Down -> `Right | 
 
 let roll dir grid = 
   let opp_dir = opposite dir in 
-  let rec h pos (roll_amt, grid) = 
+  let rec roll_line pos (roll_amt, grid) = 
     match get_opt pos grid with 
     | None -> (roll_amt, grid)
     | Some c -> 
-      h (walk pos 1 opp_dir) (update_roll roll_amt c, 
+      roll_line (walk pos 1 opp_dir) (update_roll roll_amt c, 
         match c with 
         | 'O' when roll_amt > 0 -> set (walk pos roll_amt dir) 'O' grid |> set pos '.'
         | 'O' -> grid
@@ -62,14 +62,14 @@ let roll dir grid =
     else 
       (extremum grid dir, extremum grid (perpendicular dir))
   in
-  let rec h2 pos grid = 
+  let rec roll_lines pos grid = 
     match get_opt pos grid with 
     | None -> grid
     | Some _ -> 
-      let _, res = h pos (0, grid) in
-      h2 (walk pos 1 (perpendicular dir |> opposite)) res
+      let _, res = roll_line pos (0, grid) in
+      roll_lines (walk pos 1 (perpendicular dir |> opposite)) res
   in
-  h2 start grid
+  roll_lines start grid
 
 (* if differently sized, unspecified behavior [or error] *)
 let grids_equal g1 g2 = 
