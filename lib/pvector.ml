@@ -139,7 +139,7 @@ let map fn vec =
     | Null -> Null
     | Root (l, o, t) -> Root(l, o, map pos (order >> 1) t)
     | Internal (a, b) -> Internal(map pos (order >> 1) a, map (pos + order) (order >> 1) b)
-    | Leaf (a, b) -> Leaf(fn a, if pos + 1 < l then fn b else b)
+    | Leaf (a, b) -> let res = fn a in Leaf(res, if pos + 1 < l then fn b else res)
   in
   map 0 (order vec) vec
 
@@ -215,3 +215,8 @@ let rec count_slots tree =
   | Root (_, _, c) -> count_slots c
   | Internal (a, b) -> count_slots a + count_slots b
   | Leaf _ -> 2
+
+
+let string_of_grid grid string_of_el = 
+  let s_join _ = (fun acc nxt -> acc ^ " " ^ (string_of_el nxt)) in
+  fold_left (fun acc nxt -> acc ^ "\n" ^ (fold_left (s_join nxt) "" nxt)) "" grid
