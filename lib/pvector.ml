@@ -149,7 +149,7 @@ let mapi fn vec =
     | Null -> Null
     | Root (l, o, t) -> Root(l, o, map pos (order >> 1) t)
     | Internal (a, b) -> Internal(map pos (order >> 1) a, map (pos + order) (order >> 1) b)
-    | Leaf (a, b) -> Leaf(fn pos a, if pos + 1 < l then fn (pos + 1) b else b)
+    | Leaf (a, b) -> let res = fn pos a in Leaf(res, if pos + 1 < l then fn (pos + 1) b else res)
   in
   map 0 (order vec) vec
 
