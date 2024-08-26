@@ -17,13 +17,12 @@ let append value (tree, count) =
 
 let pop_end (tree, count) = (tree, count - 1)
 
-let last_node (tree, count) = tree --> (count - 1)
 let last_pos (_, count) = count - 1
 let parent_pos pos = (pos - 1) / 2
 let left_child_pos pos = pos * 2 + 1
 let right_child_pos pos = pos * 2 + 2
 let get_node pos (tree, count) = if pos < count && pos >= 0 then tree --> pos else failwith "out of vounds"
-let set_node pos value (tree, count) = if pos < count && pos >= 0 then ((tree, pos)) <-- Some(value), count else failwith "out of vounsd"
+let set_node pos value (tree, count) = if pos < count && pos >= 0 then (tree, pos) <-- Some(value), count else failwith "out of vounsd"
 
 let rec bubble_up pos tree = 
   let node = get_node pos tree in 
@@ -79,4 +78,11 @@ let pop tree =
   match get_node (last_pos tree) tree with 
   | None -> failwith "empty!"
   | Some (prio, value) ->
-    bubble_down 0 (set_node 0 (prio, value) tree)
+    bubble_down 0 (set_node 0 (prio, value) tree |> pop_end)
+
+let increase_key pos tree new_priority = 
+  match get_node pos tree with 
+  | None -> failwith "invalid pos"
+  | Some (_, value) -> 
+    set_node pos (new_priority, value) tree
+    |> bubble_up pos
