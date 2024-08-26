@@ -217,6 +217,26 @@ let rec count_slots tree =
   | Leaf _ -> 2
 
 
+let string_of_vec vec string_of_el = 
+  fold_left (fun acc nxt -> acc ^ ", " ^ (string_of_el nxt)) "" vec
+
 let string_of_grid grid string_of_el = 
   let s_join _ = (fun acc nxt -> acc ^ " " ^ (string_of_el nxt)) in
   fold_left (fun acc nxt -> acc ^ "\n" ^ (fold_left (s_join nxt) "" nxt)) "" grid
+(* 
+module PvectorView = 
+struct
+  type 'a t = 'a Pvector.t * int * int
+
+  let append el (tree, start, count) = 
+    if Pvector.len tree = count then 
+      (Pvector.append el tree, start, count + 1)
+    else
+      (Pvector.set (start + count) el tree, start, count + 1)
+
+  let set i el (tree, start, count) = (set (start + i) el tree, start, count)
+
+  let create_view start count tree = (tree, start, count)
+
+  let fold_left fn acc (tree, start, count) = 
+end *)

@@ -168,6 +168,27 @@ let test_any () =
   check bool "Any" true @@ any (fun i -> 
     Float.log2 (Float.of_int i) |> Float.is_integer) @@ append 8 v
 
+let test_pq () = 
+  let pq = Aoc.Pqueue.empty in 
+  let pq = Aoc.Pqueue.push (0, "0") pq in 
+  check string "Peeked" "0" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.push (1, "1") pq in 
+  check string "Peeked" "1" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.push (4, "4") pq in 
+  check string "Popped" "4" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.push (0, "wow") pq in 
+  check string "Popped" "4" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.push (5, "5") pq in 
+  check string "Popped" "5" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.push (3, "3") pq in 
+  check string "Popped" "5" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.pop pq in 
+  check string "Popped" "4" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.pop pq in 
+  check string "Popped" "3" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.pop pq in 
+  check string "Popped" "1" (Aoc.Pqueue.peek pq)
+
 let () =
   run "PersistentVector" [
     "make_vec", [
@@ -206,5 +227,8 @@ let () =
     ];
     "any", [
       test_case "Check els matching predicate" `Quick test_any;
+    ];
+    "pqueue", [
+      test_case "Priority queue basic test" `Quick test_pq;
     ];
 ]
