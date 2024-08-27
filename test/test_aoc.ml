@@ -170,17 +170,21 @@ let test_any () =
 
 let test_pq () = 
   let pq = Aoc.Pqueue.empty in 
-  let pq = Aoc.Pqueue.push (0, "0") pq in 
+  let pq, zero_id = Aoc.Pqueue.push (0, "0") pq in 
   check string "Peeked" "0" (Aoc.Pqueue.peek pq);
-  let pq = Aoc.Pqueue.push (1, "1") pq in 
+  let pq, _ = Aoc.Pqueue.push (1, "1") pq in 
   check string "Peeked" "1" (Aoc.Pqueue.peek pq);
-  let pq = Aoc.Pqueue.push (4, "4") pq in 
+  let pq, _ = Aoc.Pqueue.push (4, "4") pq in 
   check string "Popped" "4" (Aoc.Pqueue.peek pq);
-  let pq = Aoc.Pqueue.push (0, "wow") pq in 
+  let pq, _ = Aoc.Pqueue.push (0, "wow") pq in 
   check string "Popped" "4" (Aoc.Pqueue.peek pq);
-  let pq = Aoc.Pqueue.push (5, "5") pq in 
+  let pq, _ = Aoc.Pqueue.push (5, "5") pq in 
   check string "Popped" "5" (Aoc.Pqueue.peek pq);
-  let pq = Aoc.Pqueue.push (3, "3") pq in 
+  let pq, _ = Aoc.Pqueue.push (3, "3") pq in 
+  check string "Popped" "5" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.increase_key zero_id pq 100 in 
+  check string "Increased key" "0" (Aoc.Pqueue.peek pq);
+  let pq = Aoc.Pqueue.pop pq in 
   check string "Popped" "5" (Aoc.Pqueue.peek pq);
   let pq = Aoc.Pqueue.pop pq in 
   check string "Popped" "4" (Aoc.Pqueue.peek pq);
