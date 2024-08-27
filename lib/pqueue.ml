@@ -1,7 +1,6 @@
 (* for now, since we don't have (efficient) pvector removals/subvectors *)
 (* we'll just keep track of truncation and append vs. set appropriately *)
 
-(* `array`, `count` under precondition that `count < Pvector.len array` *)
 module IntMap = Map.Make(Int)
 
 type ('a, 'b) t = { 
@@ -14,14 +13,19 @@ type ('a, 'b) t = {
 let (-->) = Pvector.(-->)
 let (<--) = Pvector.(<--)
 
+(* invariant: count <= Pvector.len heap *)
+(* invariant: unique ((_, _), id) values in heap *)
+(* invariant: keys(positions) == ids(heap) *)
+(* invariant: next_id not in ids(heap) *)
+(* invariant: max-heap invariant! *)
 let empty : ('a, 'b) t = { 
   heap = Pvector.make_vec 0 None; 
   count = 0; 
   next_id = 1; 
-  positions = IntMap.empty; 
+  positions = IntMap.empty;
 }
 
-(* 
+(*
   would sadly be good to store the position in the heap as well, allows for backreferences
   which is useful for popping/removal 
 *)

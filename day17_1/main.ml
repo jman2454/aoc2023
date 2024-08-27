@@ -20,12 +20,17 @@ open Aoc.Public
 let char_grid_of_string s = 
   String.split_on_char '\n' s 
   |> Pvector.of_list 
-  |> Pvector.map (fun s -> String.to_seq s |> List.of_seq |> Pvector.of_list) 
+  |> Pvector.map (fun s -> String.to_seq s |> List.of_seq |> Pvector.of_list)
 
 (* let dijkstra_modified grid = 
-  let visited = Pvector.map (Pvector.map (fun _ -> 0)) grid in
-  
    *)
+  (* let q = Pvector.fold_lefti (
+    fun row row_i (pq, id) -> 
+      Pvector.fold_lefti (fun _ col_i (pq, id) -> 
+        Aoc.Pqueue.push (Int.min_int, (row_i, col_i))) (pq, id) row
+  ) *)
+  
+  
 (* let count_excited = Pvector.fold_left (fun acc row -> Pvector.fold_left (fun acc state -> acc + excitement state) acc row) 0 *)
 let () = 
 (* count_excited  *)
