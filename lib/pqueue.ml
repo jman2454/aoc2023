@@ -71,10 +71,12 @@ let rec bubble_up pos pq =
   | None -> pq
   | Some ((p_prio, _), _) when p_prio >= n_prio -> pq
   | Some ((p_prio, p_val), p_id) -> 
-    set_node p_pos ((n_prio, n_val), n_id) pq
-    |> set_node pos ((p_prio, p_val), p_id)
-    |> fun q -> { q with positions = IntMap.add n_id p_pos q.positions |> IntMap.add p_id pos }
-    |> bubble_up p_pos
+    let next_q =  
+      set_node p_pos ((n_prio, n_val), n_id) pq
+      |> set_node pos ((p_prio, p_val), p_id)
+      |> fun q -> { q with positions = IntMap.add n_id p_pos q.positions |> IntMap.add p_id pos }
+    in
+    bubble_up p_pos next_q
 
 let len pq = pq.count
 
@@ -99,10 +101,12 @@ let rec bubble_down pos tree =
   | None -> tree
   | Some((c_prio, _), _) when n_prio >= c_prio -> tree
   | Some((c_prio, c_val), c_id) -> 
-    set_node max_pos ((n_prio, n_val), n_id) tree
-    |> set_node pos ((c_prio, c_val), c_id)
-    |> fun q -> { q with positions = q.positions |> IntMap.add n_id max_pos |> IntMap.add c_id pos }
-    |> bubble_down max_pos
+    let next_q = 
+      set_node max_pos ((n_prio, n_val), n_id) tree
+      |> set_node pos ((c_prio, c_val), c_id)
+      |> fun q -> { q with positions = q.positions |> IntMap.add n_id max_pos |> IntMap.add c_id pos }
+    in
+    bubble_down max_pos next_q
 
 (* also returns element's id, which can be used to fast-find the element later on *)
 let push value (pq : ('a, 'b) t) = 
