@@ -42,7 +42,10 @@ let last_pos pq = pq.count - 1
 let parent_pos pos = (pos - 1) / 2
 let left_child_pos pos = pos * 2 + 1
 let right_child_pos pos = pos * 2 + 2
-let get_node pos pq = if pos < pq.count && pos >= 0 then pq.heap --> pos else failwith "out of vounds"
+let get_node pos pq = 
+  if pos < pq.count && pos >= 0 then 
+    pq.heap --> pos
+  else failwith ("out of vounds: " ^ (string_of_int pos))
 
 (* we don't change any ID mappings in this, simply an array set *)
 let set_node pos value pq = 
@@ -66,7 +69,7 @@ let rec bubble_up pos pq =
   if p_pos = pos then pq else
   match get_node p_pos pq with 
   | None -> pq
-  | Some ((p_prio, _), _) when p_prio > n_prio -> pq
+  | Some ((p_prio, _), _) when p_prio >= n_prio -> pq
   | Some ((p_prio, p_val), p_id) -> 
     set_node p_pos ((n_prio, n_val), n_id) pq
     |> set_node pos ((p_prio, p_val), p_id)
@@ -94,7 +97,7 @@ let rec bubble_down pos tree =
   if max_pos >= len tree then tree else
   match get_node max_pos tree with 
   | None -> tree
-  | Some((c_prio, _), _) when n_prio > c_prio -> tree
+  | Some((c_prio, _), _) when n_prio >= c_prio -> tree
   | Some((c_prio, c_val), c_id) -> 
     set_node max_pos ((n_prio, n_val), n_id) tree
     |> set_node pos ((c_prio, c_val), c_id)
@@ -114,8 +117,18 @@ let peek pq =
 let pop pq = 
   match get_node (last_pos pq) pq with 
   | None -> failwith "empty!"
-  | Some pvi ->
-    bubble_down 0 (set_node 0 pvi pq |> pop_end)
+  | Some (tup, id) ->
+    let popped_id = get_node 0 pq |> Option.get |> snd in 
+    (* special case when popping empty *)
+    if len pq = 1 then { pq with count = 0; positions = IntMap.empty } else
+    bubble_down 0 (
+      set_node 0 (tup, id) pq 
+      |> fun q -> { 
+        q with 
+          positions = IntMap.add id 0 q.positions |> IntMap.remove popped_id; 
+          count = q.count - 1 
+      }
+    )
 
 let increase_key id tree new_priority = 
   let pos = IntMap.find_opt id tree.positions in 
