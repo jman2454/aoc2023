@@ -3,6 +3,7 @@
 
 module IntMap = Map.Make(Int)
 
+(* move to int64, and check for overflow on append *)
 type ('a, 'b) t = { 
   heap : (('a * 'b) * int) option Pvector.t;
   positions : int IntMap.t;
@@ -91,44 +92,52 @@ let max_node_pos pos1 pos2 pq =
     Option.map (fun ((prio2, _), _) -> if prio1 > prio2 then pos1 else pos2) (get_node pos2 pq) 
   ) (get_node pos1 pq) |> Option.join
 
-let rec bubble_down pos tree = 
-  let node = get_node pos tree in 
+let rec bubble_down n_pos tree = 
+  let node = get_node n_pos tree in 
   if node = None then failwith "bubbling none??" else
   let ((n_prio, n_val), n_id) = Option.get node in 
-  let l_pos = left_child_pos pos in 
-  let r_pos = right_child_pos pos in 
+  let l_pos = left_child_pos n_pos in 
+  let r_pos = right_child_pos n_pos in 
   let max_pos_opt = max_node_pos l_pos r_pos tree in 
   if max_pos_opt = None then tree else 
-  let max_pos = Option.get max_pos_opt in 
-  if max_pos >= len tree then tree else
-  match get_node max_pos tree with 
+  let c_pos = Option.get max_pos_opt in 
+  if c_pos >= len tree then tree else
+  match get_node c_pos tree with 
   | None -> tree
   | Some((c_prio, _), _) when n_prio >= c_prio -> tree
   | Some((c_prio, c_val), c_id) -> 
     let next_q = 
-      set_node max_pos ((n_prio, n_val), n_id) tree
-      |> set_node pos ((c_prio, c_val), c_id)
-      |> fun q -> { q with positions = q.positions |> IntMap.add n_id max_pos |> IntMap.add c_id pos }
+      set_node c_pos ((n_prio, n_val), n_id) tree
+      |> set_node n_pos ((c_prio, c_val), c_id)
+      |> fun q -> { q with positions = q.positions |> IntMap.add n_id c_pos |> IntMap.add c_id n_pos }
     in
-    bubble_down max_pos next_q
+    bubble_down c_pos next_q
 
 (* also returns element's id, which can be used to fast-find the element later on *)
 let push value (pq : ('a, 'b) t) = 
   let pq, id = append value pq in 
   bubble_up (last_pos pq) pq, id
 
+let contains id pq = IntMap.mem id pq.positions
+
 let peek pq = 
   match get_node 0 pq with 
   | None -> failwith "empty!"
   | Some ((_, value), _) -> value
 
+
+let peek_prio pq = 
+  match get_node 0 pq with 
+  | None -> failwith "empty!"
+  | Some ((prio, _), _) -> prio
+
 let pop pq = 
   match get_node (last_pos pq) pq with 
   | None -> failwith "empty!"
   | Some (tup, id) ->
-    let popped_id = get_node 0 pq |> Option.get |> snd in 
     (* special case when popping empty *)
-    if len pq = 1 then { pq with count = 0; positions = IntMap.empty } else
+    if len pq = 1 then { pq with count = 0; positions = IntMap.empty } else    
+    let popped_id = get_node 0 pq |> Option.get |> snd in 
     bubble_down 0 (
       set_node 0 (tup, id) pq 
       |> fun q -> { 
@@ -138,7 +147,7 @@ let pop pq =
       }
     )
 
-let increase_key id tree new_priority = 
+let update_priority id tree new_priority = 
   let pos = IntMap.find_opt id tree.positions in 
   if Option.is_none pos then failwith "not found!" else 
   let pos = Option.get pos in 
@@ -146,4 +155,25 @@ let increase_key id tree new_priority =
   | None -> failwith "invalid pos"
   | Some ((_, value), id) -> 
     set_node pos ((new_priority, value), id) tree
+    |> bubble_up pos
+    |> bubble_down pos
+
+let update_value id tree new_value = 
+  let pos = IntMap.find_opt id tree.positions in 
+  if Option.is_none pos then failwith "not found!" else 
+  let pos = Option.get pos in 
+  match get_node pos tree with 
+  | None -> failwith "invalid pos"
+  | Some ((priority, _), id) -> set_node pos ((priority, new_value), id) tree
+
+let map_id id tree fn = 
+  let pos = IntMap.find_opt id tree.positions in 
+  if Option.is_none pos then failwith "not found!" else 
+  let pos = Option.get pos in 
+  match get_node pos tree with 
+  | None -> failwith "invalid pos"
+  | Some ((priority, value), id) -> 
+    let new_prio, new_value = fn priority value in 
+    set_node pos ((new_prio, new_value), id) tree
+    |> bubble_down pos 
     |> bubble_up pos
