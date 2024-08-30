@@ -168,6 +168,115 @@ let test_any () =
   check bool "Any" true @@ any (fun i -> 
     Float.log2 (Float.of_int i) |> Float.is_integer) @@ append 8 v
 
+    
+let test_pq () =
+  let open Aoc.Pqueue in
+  let check_int = check int in
+  let check_string = check string in
+  let check_bool = check bool in
+
+  (* Test empty queue *)
+  let pq = empty in
+  check_bool "Empty queue" true (len pq = 0);
+
+  (* Test push and peek *)
+  let pq, _ = push (5, "five") pq in
+  check_string "Peek after first push" "five" (peek pq);
+  check_int "Length after first push" 1 (len pq);
+
+  let pq, id2 = push (3, "three") pq in
+  check_string "Peek after second push (lower priority)" "five" (peek pq);
+  
+  let pq, _ = push (7, "seven") pq in
+  check_string "Peek after third push (higher priority)" "seven" (peek pq);
+  check_int "Length after three pushes" 3 (len pq);
+
+  (* Test pop *)
+  let pq = pop pq in
+  check_string "Peek after first pop" "five" (peek pq);
+  
+  let pq = pop pq in
+  check_string "Peek after second pop" "three" (peek pq);
+  check_int "Length after two pops" 1 (len pq);
+
+  (* Test push after pop *)
+  let pq, id4 = push (6, "six") pq in
+  check_string "Peek after push following pops" "six" (peek pq);
+
+  (* Test increase_key *)
+  let pq = update_priority id2 pq 10 in
+  check_string "Peek after increasing key of 'three'" "three" (peek pq);
+
+  (* Test pushing elements with equal priorities *)
+  let pq, _ = push (10, "ten-1") pq in
+  let pq, _ = push (10, "ten-2") pq in
+  check_string "Peek with equal priorities" "three" (peek pq);
+  
+  let pq = pop pq in
+  check_string "Peek after pop with equal priorities (1)" "ten-1" (peek pq);
+  let pq = pop pq in
+  check_string "Peek after pop with equal priorities (2)" "ten-2" (peek pq);
+  let pq = pop pq in
+  check_string "Peek after pop with equal priorities (3)" "six" (peek pq);
+
+  (* Test pushing negative priorities *)
+  let pq, _ = push (-1, "negative") pq in
+  check_string "Peek after pushing negative priority" "six" (peek pq);
+
+  (* Test increasing key to very high value *)
+  let pq = update_priority id4 pq 1000 in
+  check_string "Peek after large key increase" "six" (peek pq);
+
+  (* Test pushing many elements *)
+  let rec push_many n pq =
+    if n = 0 then pq
+    else 
+      let pq, _ = push (Random.int 100, string_of_int n) pq in
+      push_many (n-1) pq
+  in
+  let pq = push_many 100 pq in
+  check_bool "Length after pushing many" true (len pq > 100);
+
+  (* Test popping all elements *)
+  let rec pop_all pq =
+    if len pq = 0 then pq
+    else pop_all (pop pq)
+  in
+  let empty_pq = pop_all pq in
+  check_bool "Queue is empty after popping all" true (len empty_pq = 0);
+
+  (* Test error cases *)
+  (try
+    let _ = peek empty_pq in
+    check_bool "Peek on empty queue should fail" false true
+  with _ -> 
+    check_bool "Peek on empty queue correctly failed" true true);
+
+  (try
+    let _ = pop empty_pq in
+    check_bool "Pop on empty queue should fail" false true
+  with _ -> 
+    check_bool "Pop on empty queue correctly failed" true true);
+
+  (try
+    let _ = update_priority 9999 pq 100 in
+    check_bool "Increase key with invalid id should fail" false true
+  with _ -> 
+    check_bool "Increase key with invalid id correctly failed" true true);
+
+  (* Additional test for increasing key of an element that's still in the queue *)
+  let pq, id8 = push (1, "one") empty_pq in
+  let pq, _ = push (2, "two") pq in
+  let pq = update_priority id8 pq 3 in
+  check_string "Peek after increasing key of bottom element" "one" (peek pq);
+
+  print_endline "All tests completed."
+
+let test_fold_map () = 
+  let vec, sum = make_vec 10 1 |> fold_left_map (fun acc nxt -> (acc + nxt, -nxt)) 0 in 
+  check int "10 items" 10 (len vec);
+  check int "Sum" (fold_left ((-)) 0 vec) sum
+
 let () =
   run "PersistentVector" [
     "make_vec", [
@@ -206,5 +315,11 @@ let () =
     ];
     "any", [
       test_case "Check els matching predicate" `Quick test_any;
+    ];
+    "fold_map", [
+      test_case "Test fold map" `Quick test_fold_map;
+    ];
+    "pqueue", [
+      test_case "Priority queue basic test" `Quick test_pq;
     ];
 ]
