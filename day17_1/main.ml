@@ -23,19 +23,24 @@ let char_grid_of_string s =
 
 let perpendicular = function | Left | Right -> [Up; Down] | Up | Down -> [Left; Right]
 let max_consecutive = 3
-let valid_headings last_dir last_dir_count = perpendicular last_dir @ (if last_dir_count < max_consecutive then [last_dir] else [])
+let force = 1
+let step_vectors last_dir last_dir_count = 
+  (perpendicular last_dir |> List.map (fun d -> (d, force)))
+  @ (if last_dir_count < max_consecutive then [(last_dir, 1)] else [])
 
 let get_neighbors pos headings grid = 
-  List.map (fun dir -> dir, get_opt (walk pos 1 dir) grid) headings 
-  |> List.filter_map (fun (dir, x) -> Option.map (fun x -> (dir, x)) x)
+  List.map (fun (dir, amt) -> dir, amt, get_opt (walk pos amt dir) grid) headings
+  |> List.filter_map (fun (dir, amt, x) -> Option.map (fun x -> (dir, amt, x)) x)
 
 let pick_dir (l,r,u,d) = function Left -> l | Right -> r | Up -> u | Down -> d
 
 let add_dir pos dir pq = 
-  let pq, id1 = Aoc.Pqueue.push (Int.min_int, (pos, dir, 1)) pq in
-  let pq, id2 = Aoc.Pqueue.push (Int.min_int, (pos, dir, 2)) pq in 
-  let pq, id3 = Aoc.Pqueue.push (Int.min_int, (pos, dir, 3)) pq in 
-  pq, Pvector.of_list [id1;id2;id3]
+  let rec h c (q, ids) = 
+    if c = max_consecutive + 1 then (q, ids) else 
+    let q, id = Aoc.Pqueue.push (Int.min_int, (pos, dir, c)) q in 
+    h (c + 1) (q, Pvector.append id ids)
+  in
+  h 1 (pq, Pvector.empty)
 
 let update_pos_priorities pq ids_costs (r,c) prio = 
   let (lids, rids, uids, dids), _ = ids_costs --> r --> c in 
@@ -43,6 +48,20 @@ let update_pos_priorities pq ids_costs (r,c) prio =
   let pq = Pvector.fold_left (fun pq id -> Aoc.Pqueue.update_priority id pq prio) pq rids in 
   let pq = Pvector.fold_left (fun pq id -> Aoc.Pqueue.update_priority id pq prio) pq uids in 
   Pvector.fold_left (fun pq id -> Aoc.Pqueue.update_priority id pq prio) pq dids
+
+let path_cost (x1, y1) (x2, y2) cost_grid = 
+  if x1 <> x2 && y1 <> y2 then failwith "unexpected non-straight path" else
+  let delta = if x1 <> x2 then (x2 - x1) else y2 - y1 in 
+  let step = delta / (abs delta) in 
+  let step_pos = if x1 <> x2 then (fun (x,y) -> (x + step, y)) else (fun (x,y) -> (x, y + step)) in 
+  let rec h (x,y) acc = 
+    let res = (acc + snd (cost_grid --> x --> y)) in 
+    if (x,y) = (x2, y2) then res else 
+    h (step_pos (x,y)) (acc + res)
+  in
+  let c = h (step_pos (x1, y1)) 0 in 
+  (* Printf.printf "Path cost from (%d, %d)->(%d, %d): %d\n" x1 y1 x2 y2 c; *)
+  c
 
 (* we should store indices too, so we want fold_left_mapi *)
 let dijkstra_modified grid = 
@@ -68,18 +87,19 @@ let dijkstra_modified grid =
       if pos = target then
         -cost
       else
-        let headings = valid_headings dir dir_ct in 
+        let headings = step_vectors dir dir_ct in 
         let neighbors = 
           get_neighbors pos headings ids_costs
-          |> List.filter_map (fun (n_dir, (ids, el)) -> 
-            let new_dir_ct = if dir = n_dir then dir_ct + 1 else 1 in 
+          |> List.filter_map (fun (n_dir, n_amt, (ids, el)) -> 
+            let new_dir_ct = if dir = n_dir then dir_ct + n_amt else n_amt in 
             let id = pick_dir ids n_dir --> (new_dir_ct - 1) in 
-            if Aoc.Pqueue.contains id pq then Some(id, el, new_dir_ct) else None) 
+            if Aoc.Pqueue.contains id pq then Some(id, el, new_dir_ct) else None)
         in
-        List.fold_left (fun q (id, el, new_dir_ct) -> 
+
+        List.fold_left (fun q (id, _, new_dir_ct) -> 
           Aoc.Pqueue.map_id id q (
             fun neg_curr_cost (n_pos, n_dir, n_dir_ct) ->               
-              let neg_walk_cost = cost - el in 
+              let neg_walk_cost = cost - (path_cost pos n_pos ids_costs) in 
               let cost, ct = if neg_walk_cost > neg_curr_cost then neg_walk_cost, new_dir_ct else neg_curr_cost, n_dir_ct in 
               cost, (n_pos, n_dir, ct)
           )

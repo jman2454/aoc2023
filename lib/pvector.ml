@@ -96,7 +96,7 @@ let append el vec =
 let at i vec = 
   let l = len vec in 
   if i >= l || i < 0 then 
-    failwith "Index out of bounds"
+    failwith ("Index out of bounds: " ^ string_of_int i ^ ", (length=" ^ string_of_int l ^ ")")
   else 
   let rec helper order pos = function
     | Leaf(a, b) -> if i mod 2 = 0 then a else b
