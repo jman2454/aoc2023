@@ -34,7 +34,6 @@ let instructions str =
     | _ -> failwith "bad instruction")
 
 let walk_inst (x, y) (dir, amt) = 
-
   match dir with 
   | 'L' -> (x - amt, y)
   | 'R' -> (x + amt, y)
