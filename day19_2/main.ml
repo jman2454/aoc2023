@@ -55,7 +55,12 @@ let parse_program s =
     |> StringMap.add "R" [Reject])
 
 let opposite = function Greater -> Leq | Less -> Geq | Geq -> Less | Leq -> Greater
-
+let bind_constraint n (min,max) = 
+  function
+  | Geq -> if n > min then (n, max) else (min, max)
+  | Leq -> if n < max then (min, n) else (min, max)
+  | Greater -> if n + 1 > min then (n + 1, max) else (min, max)
+  | Less -> if n - 1 < max then (min, n - 1) else (min, max)
 
 let rec find_constraints nodes workflows curr_constraints constraint_lists = 
   match nodes with 
@@ -63,15 +68,26 @@ let rec find_constraints nodes workflows curr_constraints constraint_lists =
     (match node with 
     | Branch (member, n, comp, target) -> 
       let child = StringMap.find target workflows in 
-      find_constraints child workflows ((member, n, comp)::curr_constraints) constraint_lists
-      |> find_constraints rest workflows ((member, n, opposite comp)::curr_constraints)
+      let (m_min, m_max) = CharMap.find member curr_constraints in 
+      find_constraints child workflows (CharMap.add member (bind_constraint n (m_min, m_max) comp) curr_constraints) constraint_lists
+      |> find_constraints rest workflows (CharMap.add member (bind_constraint n (m_min, m_max) (opposite comp)) curr_constraints)
     | Jump target -> 
       find_constraints (StringMap.find target workflows) workflows curr_constraints constraint_lists
     | Accept -> curr_constraints::constraint_lists
     | Reject -> constraint_lists)
   | [] -> constraint_lists
 
-let evaluate workflows = find_constraints (StringMap.find "in" workflows) workflows [] []
+let register c map = CharMap.add c (1, 4000) map
+
+let evaluate workflows = 
+  let default_map = CharMap.empty |> register 'x' |> register 'm' |> register 'a' |> register 's' in 
+  find_constraints (StringMap.find "in" workflows) workflows default_map []
+
+let num_valid map = 
+  CharMap.fold (fun _ (min, max) acc -> 
+    Int64.mul acc (Int64.add (Int64.sub (max |> Int64.of_int) (min |> Int64.of_int)) Int64.one)) map Int64.one
+
+let sum_valid = List.fold_left (fun acc const -> Int64.add acc (num_valid const)) Int64.zero
 
 let () = 
 let constraints = "px{a<2006:qkq,m>2090:A,rfg}
@@ -90,11 +106,8 @@ hdj{m>838:A,pv}
 {x=1679,m=44,a=2067,s=496}
 {x=2036,m=264,a=79,s=2244}
 {x=2461,m=1339,a=466,s=291}
-{x=2127,m=1623,a=2188,s=1013}" |> parse_program |> evaluate
+{x=2127,m=1623,a=2188,s=1013}"
+|> parse_program |> evaluate
 in
 
-let string_of_comp = function | Geq -> "Geq" | Leq -> "Leq" | Greater -> "Greater" | Less -> "Less" in 
-List.iter (fun constraint_list -> 
-  Printf.printf "NEXT:\n";
-  List.iter (fun (member, n, comp) -> Printf.printf "\t%c %s %d\n" member (string_of_comp comp) n) constraint_list)
-constraints
+constraints |> sum_valid |> Int64.to_string |> Printf.printf "total: %s\n"
