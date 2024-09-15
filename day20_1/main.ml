@@ -5,7 +5,7 @@ open Aoc.Public
 module StringMap = Map.Make(String)
 module IntMap = Map.Make(Int)
 
-type node_state = FlipFlop of bool | Conjunction of int * int * bool IntMap.t | Broadcaster
+type node_state = FlipFlop of bool | Conjunction of int * int * bool IntMap.t | Broadcaster | Stop
 type node = { index : int; name : string; children : int Pvector.t; state : node_state }
 
 let parse_node str nodes map = 
@@ -21,14 +21,24 @@ let parse_node str nodes map =
   in
 
   let target, state = match String.get target 0 with 
-  | '&' -> String.sub target 1 (String.length target - 1), FlipFlop(false)
-  | '%' -> String.sub target 1 (String.length target - 1), Conjunction((0, 0, IntMap.empty))
+  | '%' -> String.sub target 1 (String.length target - 1), FlipFlop(false)
+  | '&' -> String.sub target 1 (String.length target - 1), Conjunction((0, 0, IntMap.empty))
   | _ -> if target = "broadcaster" then target, Broadcaster else failwith "bad node"
   in
 
   Pvector.append (target, state, children) nodes, StringMap.add target (Pvector.len nodes) map
 
 let resolve_nodes nodes map = 
+  (* add implicit nodes *)
+  let (nodes, map) = Pvector.fold_left (fun (nodes, map) (_, _, children) -> 
+      Pvector.fold_left (fun (nodes, map) child_name -> 
+        if StringMap.mem child_name map then (nodes, map) else 
+        (Pvector.append (child_name, Stop, Pvector.empty) nodes, StringMap.add child_name (Pvector.len nodes) map)
+      ) (nodes, map) children
+    )
+    (nodes, map) nodes 
+  in
+
   let find = fun c -> StringMap.find c map in 
   let nodes = Pvector.mapi (fun index (node_name, node_state, child_names) -> { 
     index = index; children = Pvector.map find child_names;
@@ -55,6 +65,7 @@ let print_nodes nodes =
       "Conjunction(ct=" ^ string_of_int ct ^ ", total_ct=" ^ string_of_int total_ct ^ ", parents=[" ^ parents_str ^ "])"
     | FlipFlop on -> "FlipFlop(on=" ^ string_of_bool on ^ ")"
     | Broadcaster -> "Broadcaster"
+    | Stop -> "Stop"
     in
     Printf.printf "name=%s, index=%d, children=[%s], state=%s\n" node.name node.index child_names state_str
   ) () nodes
@@ -86,6 +97,7 @@ let process_pulse node_i nodes pulse =
   | FlipFlop on -> 
     if pulse.high then nodes, None else 
     (nodes, node_i) <-- { node with state = FlipFlop(not on) }, Some({ high = not on; source = node_i })
+  | Stop -> nodes, None
 
 let rec loop_q q nodes = 
   if Aoc.Queue.is_empty q then 
@@ -95,8 +107,8 @@ let rec loop_q q nodes =
     let affected = (nodes --> p.source).children in 
     let (q, nodes) = Pvector.fold_left (fun (q, nodes) c_i -> 
       let (nodes, pulse_opt) = process_pulse c_i nodes p in 
-
-      (* Printf.printf "----------\n";
+(* 
+      Printf.printf "----------\n";
       print_nodes nodes;
       Printf.printf "----------\n"; *)
 
