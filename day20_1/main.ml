@@ -99,37 +99,89 @@ let process_pulse node_i nodes pulse =
     (nodes, node_i) <-- { node with state = FlipFlop(not on) }, Some({ high = not on; source = node_i })
   | Stop -> nodes, None
 
-let rec loop_q q nodes = 
+let rec loop_q q nodes high_ct low_ct = 
   if Aoc.Queue.is_empty q then 
-    (q, nodes)
+    (q, nodes, high_ct, low_ct)
   else
     let p = Aoc.Queue.front q in 
     let affected = (nodes --> p.source).children in 
+    let card = Pvector.len affected in
+    let add_high = if p.high then card else 0 in
+    let add_low = card - add_high in 
     let (q, nodes) = Pvector.fold_left (fun (q, nodes) c_i -> 
       let (nodes, pulse_opt) = process_pulse c_i nodes p in 
-(* 
-      Printf.printf "----------\n";
+
+      (* Printf.printf "----------\n";
       print_nodes nodes;
       Printf.printf "----------\n"; *)
 
       match pulse_opt with 
       | None -> (q, nodes)
-      | Some(pulse) -> (Aoc.Queue.enq pulse q, nodes)
+      | Some(pulse) -> Printf.printf "%s sends high=%b\n" (nodes-->c_i).name pulse.high; (Aoc.Queue.enq pulse q, nodes)
     ) (Aoc.Queue.deq q, nodes) affected
     in 
-    loop_q q nodes
+    loop_q q nodes (high_ct + add_high) (low_ct + add_low)
 
 let run_nodes nodes = 
   let broadcaster_index = Pvector.fold_left (fun ind node -> 
-    if node.name = "broadcaster" then node.index else ind ) (-1) nodes in
-  loop_q (Aoc.Queue.empty |> Aoc.Queue.enq { high = false; source = broadcaster_index }) nodes |> snd
+    if node.name = "broadcaster" then node.index else ind) (-1) nodes in
+  let (_, nodes, high_ct, low_ct) = 
+    loop_q (Aoc.Queue.empty |> Aoc.Queue.enq { high = false; source = broadcaster_index }) nodes 0 1
+  in 
+  Printf.printf "High=%d, Low=%d\n" high_ct low_ct;
+  nodes
+
+module HashableNodeList = struct 
+  type t = node Pvector.t
+
+  let hash nodes = 
+    Pvector.fold_left (fun acc node -> 
+      acc * 31 + node.index + match node.state with 
+      | Stop -> 2
+      | Broadcaster -> 3
+      | FlipFlop on -> if on then 5 else 7 
+      | Conjunction (_, _, parents) -> 
+        IntMap.fold (fun key on acc -> acc * 31 + Hashtbl.hash (key * (if on then 11 else 13))) parents 0
+    ) 0 nodes
+
+  let equal nodes1 nodes2 = 
+    if Pvector.len nodes1 <> Pvector.len nodes2 then false else
+    let stop = Pvector.len nodes1 in 
+    let rec h curr = 
+      if curr = stop then 
+        true
+      else
+        let n1 = nodes1 --> curr in 
+        let n2 = nodes2 --> curr in 
+        let continue = 
+          n1.index = n2.index
+          && n1.name = n2.name
+          &&
+          match n1.state, n2.state with 
+          | Stop, Stop
+          | Broadcaster, Broadcaster -> true 
+          | FlipFlop on1, FlipFlop on2 -> on1 = on2
+          | Conjunction (c1, t1, p1), Conjunction (c2, t2, p2) -> 
+            let parent_states_equal = 
+              List.combine (IntMap.to_list p1) (IntMap.to_list p2) 
+              |> List.fold_left (fun acc ((i1, o1), (i2, o2)) -> acc && i1 = i2 && o1 = o2) true
+            in 
+            c1 = c2 && t1 = t2 && parent_states_equal
+          | _ -> false
+        in
+        if continue then h (curr + 1) else false
+    in
+    h 0
+end
+
+module StateHashTable = Hashtbl.Make(HashableNodeList)
 
 let () = 
-let nodes = parse_input {|broadcaster -> a
-%a -> inv, con
-&inv -> b
-%b -> con
-&con -> output|} in 
+let nodes = parse_input {|broadcaster -> a, b, c
+%a -> b
+%b -> c
+%c -> inv
+&inv -> a|} in 
 
 nodes |> print_nodes;
 Printf.printf "After run: \n";
