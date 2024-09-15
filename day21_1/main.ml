@@ -17,7 +17,7 @@ let neighbors (row, col) grid width =
   )
 
 let rec bfs q grid width (seen, acc) = 
-  if Aoc.Queue.is_empty q then (Printf.printf "empty"; seen, acc) else 
+  if Aoc.Queue.is_empty q then seen, acc else 
   let (row, col, remaining) = Aoc.Queue.front q in 
   let index = pos_to_index (row, col) width in 
   if IntMap.mem index seen then bfs (Aoc.Queue.deq q) grid width (seen, acc) else 
