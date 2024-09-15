@@ -105,7 +105,7 @@ let rec loop_q q nodes res index =
   else
     let p = Aoc.Queue.front q in 
     let affected = (nodes --> p.source).children in 
-    let res = res || (p.source = index && p.high) in 
+    if (p.source = index && p.high) then (q, nodes, true) else
     let (q, nodes) = Pvector.fold_left (fun (q, nodes) c_i -> 
       let (nodes, pulse_opt) = process_pulse c_i nodes p in 
       match pulse_opt with
