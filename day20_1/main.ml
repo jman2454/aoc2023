@@ -117,19 +117,21 @@ let rec loop_q q nodes high_ct low_ct =
 
       match pulse_opt with 
       | None -> (q, nodes)
-      | Some(pulse) -> Printf.printf "%s sends high=%b\n" (nodes-->c_i).name pulse.high; (Aoc.Queue.enq pulse q, nodes)
+      | Some(pulse) ->
+         (* Printf.printf "%s sends high=%b\n" (nodes-->c_i).name pulse.high;  *)
+      (Aoc.Queue.enq pulse q, nodes)
     ) (Aoc.Queue.deq q, nodes) affected
     in 
     loop_q q nodes (high_ct + add_high) (low_ct + add_low)
 
-let run_nodes nodes = 
+let run_nodes (nodes, high_ct, low_ct) = 
   let broadcaster_index = Pvector.fold_left (fun ind node -> 
     if node.name = "broadcaster" then node.index else ind) (-1) nodes in
   let (_, nodes, high_ct, low_ct) = 
-    loop_q (Aoc.Queue.empty |> Aoc.Queue.enq { high = false; source = broadcaster_index }) nodes 0 1
+    loop_q (Aoc.Queue.empty |> Aoc.Queue.enq { high = false; source = broadcaster_index }) nodes high_ct (low_ct + 1)
   in 
-  Printf.printf "High=%d, Low=%d\n" high_ct low_ct;
-  nodes
+  (* Printf.printf "High=%d, Low=%d\n" high_ct low_ct; *)
+  nodes, high_ct, low_ct
 
 module HashableNodeList = struct 
   type t = node Pvector.t
@@ -177,12 +179,72 @@ end
 module StateHashTable = Hashtbl.Make(HashableNodeList)
 
 let () = 
-let nodes = parse_input {|broadcaster -> a, b, c
-%a -> b
-%b -> c
-%c -> inv
-&inv -> a|} in 
+let nodes = parse_input {|%vg -> lf, vd
+%dr -> kg
+%cn -> mv, pt
+%rq -> bk, gr
+%vp -> lp, bk
+%kg -> lv
+%lv -> jc, tp
+%sj -> rm, vd
+%jc -> tp, qr
+%km -> tp, dr
+%jx -> cn
+&vd -> tf, lf, nb, cx, hx, lr
+%lp -> jt, bk
+%vj -> ps
+broadcaster -> km, lr, xh, rf
+%dj -> pt, gc
+%cg -> vd, hx
+&ln -> tg
+%fl -> pt, sk
+%lm -> tr, bk
+%lr -> vd, vg
+&pt -> vq, rf, cm, jx, rg
+%cx -> gp
+%gp -> vd, sj
+&db -> tg
+%st -> vd
+%jt -> bk
+%jh -> lm, bk
+%xf -> bd, tp
+%gc -> cm, pt
+&tp -> dr, km, kg, db, vj, qr
+%ps -> xf, tp
+%rf -> pt, dj
+%lf -> nb
+%bd -> tp, gg
+%dk -> tp, vj
+%mn -> jh, bk
+&tg -> rx
+%ql -> bk, zx
+%tr -> bk, vp
+%sk -> pt
+%nb -> cg
+%sb -> vd, cx
+%qr -> dk
+%xh -> bk, ql
+%rg -> sd
+%hx -> sb
+%sd -> pt, jx
+%gr -> bk, mn
+%gg -> tp
+%zx -> rq
+&bk -> xh, ln, zx
+%rm -> st, vd
+%hq -> fl, pt
+&vq -> tg
+%cm -> rg
+&tf -> tg
+%mv -> pt, hq|} in 
+
+let rec apply_n fn acc ct = 
+  if ct = 0 then acc
+  else apply_n fn (fn acc) (ct - 1)
+in
 
 nodes |> print_nodes;
 Printf.printf "After run: \n";
-(run_nodes nodes) |> print_nodes
+let nodes, high, low = (apply_n run_nodes (nodes, 0, 0) 1000) in 
+nodes |> print_nodes;
+Printf.printf "Final count: %d\n" (high * low)
